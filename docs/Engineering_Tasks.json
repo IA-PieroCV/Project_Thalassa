@@ -1,0 +1,130 @@
+{
+  "projectName": "Project Thalassa",
+  "stories": [
+    {
+      "story_title": "Partner provides sequence data via a shared folder",
+      "epic_name": "Data Ingestion and Processing",
+      "tasks": [
+        {
+          "title": "GCP: Provision a Google Cloud Storage bucket",
+          "body": "As per Technical_Architecture.md, create and configure the GCS bucket to be used for partner data ingestion. Set up appropriate lifecycle policies if needed.",
+          "labels": ["gcp", "setup", "infra"]
+        },
+        {
+          "title": "GCP: Configure IAM & Security for the GCS bucket",
+          "body": "Establish the necessary IAM permissions to allow the partner a secure way to upload files and the internal analysis service to read them. This may involve creating a service account or using signed URLs.",
+          "labels": ["gcp", "security", "iam"]
+        },
+        {
+          "title": "DOCS: Create data upload guide for the partner",
+          "body": "Write a clear, concise guide for the partner contact on how to upload files to the GCS bucket. The document must include the required file naming convention: `PartnerID_CageID_YYYY-MM-DD_SampleID.fastq`.",
+          "labels": ["documentation", "partner-facing"]
+        }
+      ]
+    },
+    {
+      "story_title": "Analyst generates risk score from data",
+      "epic_name": "Data Ingestion and Processing",
+      "tasks": [
+        {
+          "title": "BE: Implement GCS file download in analysis script",
+          "body": "Add Python code to the analysis script to securely connect to the Google Cloud Storage bucket and download the latest `fastq` files for processing.",
+          "labels": ["backend", "gcp", "feature"]
+        },
+        {
+          "title": "BE: Implement filename parsing logic",
+          "body": "Add a function to the Python script to parse incoming filenames to extract `CageID` according to the specified `PartnerID_CageID_YYYY-MM-DD_SampleID.fastq` format.",
+          "labels": ["backend", "feature", "parser"]
+        },
+        {
+          "title": "BE: Integrate core analysis model into script",
+          "body": "Create the main Python script that orchestrates the workflow: takes a file path as input, calls the core analysis function, and captures the resulting risk score.",
+          "labels": ["backend", "feature", "data-science"]
+        },
+        {
+          "title": "BE: Implement JSON output generation",
+          "body": "After analysis, the script must format the results into the specified JSON structure (`[{ \"cageId\": \"...\", \"srsRiskScore\": ..., \"lastUpdated\": \"...\" }]`) and overwrite the `results.json` file on the local filesystem.",
+          "labels": ["backend", "feature", "data-format"]
+        },
+        {
+          "title": "DEV-OPS: Create Dockerfile for the analysis service",
+          "body": "Write a `Dockerfile` that packages the Python analysis script and all its dependencies into a container image for deployment on the OCI VPS.",
+          "labels": ["devops", "docker", "deployment"]
+        },
+        {
+          "title": "TEST: Write unit tests for the analysis script",
+          "body": "Create unit tests for the filename parsing function and the JSON output formatting to ensure they are robust and handle edge cases correctly.",
+          "labels": ["testing", "unit-test"]
+        }
+      ]
+    },
+    {
+      "story_title": "Partner accesses dashboard with a password",
+      "epic_name": "Risk Reporting & Alerting",
+      "tasks": [
+        {
+          "title": "BE: Set up basic FastAPI application",
+          "body": "Initialize a new FastAPI project with a basic file structure, including a main application file and a directory for HTML templates.",
+          "labels": ["backend", "setup", "api"]
+        },
+        {
+          "title": "BE: Implement Bearer Token authentication",
+          "body": "Add a security dependency to the FastAPI application to protect endpoints. It must check for a valid, shared Bearer Token in the `Authorization` header. The token must be loaded from an environment variable.",
+          "labels": ["backend", "feature", "security", "auth"]
+        },
+        {
+          "title": "FE: Create basic HTML placeholder for dashboard",
+          "body": "Create a simple `index.html` file. This will initially serve as a placeholder to confirm the serving mechanism works before adding dynamic data.",
+          "labels": ["frontend", "ui", "setup"]
+        },
+        {
+          "title": "BE: Create FastAPI endpoint to serve the HTML page",
+          "body": "Implement a GET endpoint that is protected by the Bearer Token authentication and serves the `index.html` file upon successful authentication.",
+          "labels": ["backend", "feature", "api"]
+        },
+        {
+          "title": "DEV-OPS: Create Dockerfile for the FastAPI service",
+          "body": "Write a `Dockerfile` that installs FastAPI, Uvicorn, and other dependencies, then copies the application code and templates into a container image.",
+          "labels": ["devops", "docker", "deployment"]
+        }
+      ]
+    },
+    {
+      "story_title": "Partner views risk scores on the dashboard",
+      "epic_name": "Risk Reporting & Alerting",
+      "tasks": [
+        {
+          "title": "BE: Implement logic to read `results.json` in FastAPI",
+          "body": "Enhance the dashboard endpoint to open and read the `results.json` file from the filesystem. The code must parse the JSON data and pass it to the template rendering context. It should gracefully handle the file-not-found case.",
+          "labels": ["backend", "feature", "api"]
+        },
+        {
+          "title": "FE: Update HTML template to dynamically render results",
+          "body": "Modify the `index.html` file to use a templating engine like Jinja2. Add a loop to iterate through the list of cage data and render each `cageId` and `srsRiskScore` into a simple HTML list.",
+          "labels": ["frontend", "feature", "ui"]
+        },
+        {
+          "title": "TEST: Write integration test for dashboard endpoint",
+          "body": "Create a test that places a mock `results.json` file in the expected location, then calls the dashboard endpoint with valid authentication. The test must assert that the returned HTML contains the correctly rendered data.",
+          "labels": ["testing", "integration-test"]
+        }
+      ]
+    },
+    {
+      "story_title": "Analyst manually alerts partner of critical risk",
+      "epic_name": "Risk Reporting & Alerting",
+      "tasks": [
+        {
+          "title": "BE: Add critical score logging to analysis script",
+          "body": "Modify the analysis script to compare each generated score against a configurable threshold. If a score exceeds the threshold, print a prominent warning message to the console output (stdout).",
+          "labels": ["backend", "feature", "logging"]
+        },
+        {
+          "title": "DOCS: Create email alert template",
+          "body": "Create a `email_template.txt` file in the project repository. This file will contain the standardized wording for the manual email alert, with placeholders for `[Cage ID]`, `[Risk Score]`, and `[Date of Analysis]`.",
+          "labels": ["documentation"]
+        }
+      ]
+    }
+  ]
+}
