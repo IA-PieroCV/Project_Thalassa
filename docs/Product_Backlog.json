@@ -1,0 +1,73 @@
+{
+  "projectName": "Project Thalassa",
+  "definition_of_ready": "A user story is considered 'Ready' for development when it has been approved by the Product Owner, has clear and testable acceptance criteria, and any external dependencies (like the partner's file naming convention) have been clarified.",
+  "definition_of_done": "A user story is considered 'Done' when its functionality is implemented, all acceptance criteria are met, code is peer-reviewed, all related tests are passing, and it is merged into the main branch.",
+  "epics": [
+    {
+      "name": "Data Ingestion and Processing",
+      "description": "Covers the concierge service for receiving partner data (`fastq` files) and the backend analysis to generate the SRS Outbreak Risk Score.",
+      "stories": [
+        {
+          "title": "Partner provides sequence data via a shared folder",
+          "user_story": "As a Partner's Lab Manager, I want to securely provide our `fastq` sequencing files via a shared cloud folder, so that the Thalassa team can access them for risk analysis.",
+          "acceptance_criteria": [
+            "A secure cloud folder (e.g., Google Drive) is provisioned for the partner.",
+            "The designated partner contact is granted write-access to the folder.",
+            "The partner can successfully upload `fastq` files to the folder.",
+            "The Thalassa team can successfully access and download the files from the folder.",
+            "A simple file naming convention (e.g., `CageID_SampleDate_SampleID.fastq.gz`) is agreed upon and documented."
+          ]
+        },
+        {
+          "title": "Analyst generates risk score from data",
+          "user_story": "As a Thalassa Data Analyst, I want to execute the backend analytics engine on the partner's `fastq` files, so that an \"SRS Outbreak Risk Score\" is generated for each sea cage.",
+          "acceptance_criteria": [
+            "The analyst can fetch the latest files from the partner's shared folder.",
+            "A script exists to run the core AI model using a `fastq` file as input.",
+            "The script successfully outputs a numerical \"SRS Outbreak Risk Score\" for each file processed.",
+            "The output score is correctly associated with the corresponding sea cage ID from the source file's name.",
+            "The resulting scores (Cage ID + Risk Score) are stored in a simple, internal data store (e.g., CSV, internal database) for use by the results dashboard."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Risk Reporting & Alerting",
+      "description": "Covers the presentation of risk scores via a secure, password-protected dashboard and the manual email alert process for critical events.",
+      "stories": [
+        {
+          "title": "Partner accesses dashboard with a password",
+          "user_story": "As a Head of Fish Health, I want to access the results dashboard via a single, password-protected webpage, so that our sensitive operational data remains confidential.",
+          "acceptance_criteria": [
+            "A single, static HTML page is created for the dashboard.",
+            "The webpage is protected by a simple, shared password mechanism (e.g., Basic Authentication).",
+            "The password is communicated securely to the designated partner contact.",
+            "An unauthorized user visiting the URL is prompted for credentials and cannot see the content.",
+            "A user entering the correct password gains access to the dashboard."
+          ]
+        },
+        {
+          "title": "Partner views risk scores on the dashboard",
+          "user_story": "As a Head of Fish Health, I want to view a simple list of our sea cages and their current risk scores, so that I can quickly understand the health status across all my monitored assets.",
+          "acceptance_criteria": [
+            "The dashboard page displays the data from the internal data store generated in the previous Epic.",
+            "The information is presented as a simple list.",
+            "Each list item clearly displays the sea cage identifier and its corresponding \"SRS Outbreak Risk Score\" (e.g., \"Cage A1: 85% Risk\").",
+            "The data on the page is updated by the Thalassa team after each new analysis cycle."
+          ]
+        },
+        {
+          "title": "Analyst manually alerts partner of critical risk",
+          "user_story": "As a Thalassa Analyst, I want to manually send an email alert to our partner contact, so that they are immediately notified when a risk score crosses a critical threshold.",
+          "acceptance_criteria": [
+            "A critical risk score threshold is defined internally (e.g., > 80%).",
+            "The analyst has a process to check for scores exceeding this threshold after each analysis run.",
+            "A pre-defined email template for the alert is available.",
+            "The analyst successfully sends the email to the designated partner contact.",
+            "The email content clearly identifies the cage, its risk score, and the date of the analysis."
+          ]
+        }
+      ]
+    }
+  ]
+}
