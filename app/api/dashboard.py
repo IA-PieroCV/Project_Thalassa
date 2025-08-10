@@ -7,10 +7,14 @@ to partners for viewing SRS risk assessment results.
 
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 from ..dependencies.auth import RequireAuth
 
 router = APIRouter(prefix="/api/v1", tags=["dashboard"])
+
+# Configure templates
+templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
@@ -26,20 +30,16 @@ async def get_dashboard(
 
     Authentication: Bearer token required in Authorization header.
     """
-    # TODO: This is a placeholder response until dashboard.html is created
-    # and the template rendering is fully implemented in Issue #35
-    return """
-    <html>
-        <head>
-            <title>Project Thalassa - Dashboard</title>
-        </head>
-        <body>
-            <h1>Project Thalassa Dashboard</h1>
-            <p>Dashboard functionality coming soon...</p>
-            <p>Authentication successful!</p>
-        </body>
-    </html>
-    """
+    # Prepare template context with placeholder data
+    context = {
+        "request": request,
+        "filename": "Placeholder - No files processed yet",
+        "risk_score": "Pending analysis setup",
+        "status": "Dashboard template ready - awaiting data pipeline",
+        "last_updated": "Template rendered successfully",
+    }
+
+    return templates.TemplateResponse("dashboard.html", context)
 
 
 @router.get("/dashboard/health")
