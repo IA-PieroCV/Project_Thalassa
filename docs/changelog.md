@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- [Added]: Bearer Token authentication for secure upload endpoints (#25)
 - [Added]: FastAPI endpoint for fastq file uploads with validation and secure storage (#24)
 - [Added]: Modern development environment with pixi package manager (#43)
 - [Added]: Comprehensive testing framework with pytest and async support (#43)

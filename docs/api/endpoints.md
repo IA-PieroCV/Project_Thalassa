@@ -51,6 +51,14 @@ Detailed health check endpoint for monitoring systems.
 }
 ```
 
+## Authentication
+
+All upload endpoints require Bearer token authentication. Include the authentication token in the `Authorization` header:
+
+```http
+Authorization: Bearer your-token-here
+```
+
 ## File Upload Endpoints
 
 ### POST /api/v1/upload
@@ -58,9 +66,13 @@ Detailed health check endpoint for monitoring systems.
 Upload a fastq file for bioinformatics analysis. The file must follow the naming convention:
 `PartnerID_CageID_YYYY-MM-DD_SampleID.fastq`
 
+**Authentication:** Bearer token required in Authorization header
+
 **Request:**
 - Method: `POST`
 - Content-Type: `multipart/form-data`
+- Headers:
+  - `Authorization: Bearer <token>`
 - Parameters:
   - `file`: The fastq file to upload
 
@@ -85,12 +97,20 @@ Upload a fastq file for bioinformatics analysis. The file must follow the naming
 
 **Error Responses:**
 - `400` - Invalid filename format or fastq content
+- `401` - Missing or invalid Bearer token authentication
 - `409` - File with the same name already exists
 - `422` - No file provided or validation error
 
 ### GET /api/v1/upload/files
 
 List all uploaded fastq files with their metadata.
+
+**Authentication:** Bearer token required in Authorization header
+
+**Request:**
+- Method: `GET`
+- Headers:
+  - `Authorization: Bearer <token>`
 
 **Response (200 - Success):**
 ```json
@@ -110,6 +130,9 @@ List all uploaded fastq files with their metadata.
 }
 ```
 
+**Error Responses:**
+- `401` - Missing or invalid Bearer token authentication
+
 ### GET /api/v1/upload/health
 
 Health check endpoint for upload service.
@@ -126,9 +149,11 @@ Health check endpoint for upload service.
 
 ## API Modules
 
-Planned API endpoints for future development:
+### Implemented
+- **Authentication** - Bearer token authentication for secure endpoint access ✅
+- **File Upload** - Upload and manage fastq files with validation ✅
 
-- **Authentication** - Bearer token authentication (Issue #25)
+### Planned for Future Development
 - **Analysis** - Risk assessment and processing endpoints
 - **Results** - Query and retrieve analysis results
 - **Dashboard** - Aggregate data for dashboard views
@@ -136,6 +161,22 @@ Planned API endpoints for future development:
 ## Error Responses
 
 All endpoints may return these error responses:
+
+### 401 Authentication Error
+```json
+{
+  "detail": "Authorization header is required"
+}
+```
+
+```json
+{
+  "detail": "Invalid bearer token"
+}
+```
+
+**Headers:**
+- `WWW-Authenticate: Bearer`
 
 ### 422 Validation Error
 ```json
