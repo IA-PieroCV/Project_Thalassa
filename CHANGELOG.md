@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - [Feature]: AnalysisService class for fastq file discovery and metadata extraction (#28)
 - [Feature]: Basic FastAPI application skeleton with template and static file support (#34)
+- [Testing]: Comprehensive integration tests for authenticated dashboard endpoint (#36)
 
 ### Changed
 
