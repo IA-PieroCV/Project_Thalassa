@@ -8,6 +8,8 @@ data analysis platform, providing secure file upload and dashboard functionality
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .api.upload import router as upload_router
+
 app = FastAPI(
     title="Project Thalassa",
     description="Bioinformatics data analysis platform for SRS risk assessment",
@@ -25,6 +27,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include API routers
+app.include_router(upload_router)
 
 
 @app.get("/")
