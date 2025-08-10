@@ -394,3 +394,322 @@ class TestAnalysisService:
             analysis_service.get_file_info(invalid_file)
 
         assert "Failed to parse filename" in caplog.text
+
+    def test_calculate_srs_risk_score_valid_file(self, analysis_service, temp_dir):
+        """Test SRS risk score calculation for a valid fastq file."""
+        # Create a fastq file with realistic content
+        test_file = Path(temp_dir) / "test_sample.fastq"
+        fastq_content = """@seq1
+ATGCGTACGTCGTAGCTAGCTAG
++
+HHHHHHHHHHHHHHHHHHHHHH
+@seq2
+GGCTAGCTAGCTAGCTAGCTAG
++
+IIIIIIIIIIIIIIIIIIIIII
+@seq3
+CCCGGGAAATTTCCCGGGAAA
++
+JJJJJJJJJJJJJJJJJJJJJ
+"""
+        test_file.write_text(fastq_content)
+
+        risk_score = analysis_service.calculate_srs_risk_score(test_file)
+
+        assert isinstance(risk_score, float)
+        assert 0.0 <= risk_score <= 1.0
+
+    def test_calculate_srs_risk_score_compressed_file(self, analysis_service, temp_dir):
+        """Test SRS risk score calculation for a compressed fastq file."""
+        import gzip
+
+        test_file = Path(temp_dir) / "test_sample.fastq.gz"
+        fastq_content = """@seq1
+ATGCGTACGTCGTAGCTAGCTAG
++
+HHHHHHHHHHHHHHHHHHHHHH
+@seq2
+GGCTAGCTAGCTAGCTAGCTAG
++
+IIIIIIIIIIIIIIIIIIIIII
+"""
+
+        with gzip.open(test_file, "wt", encoding="utf-8") as f:
+            f.write(fastq_content)
+
+        risk_score = analysis_service.calculate_srs_risk_score(test_file)
+
+        assert isinstance(risk_score, float)
+        assert 0.0 <= risk_score <= 1.0
+
+    def test_calculate_srs_risk_score_nonexistent_file(
+        self, analysis_service, temp_dir
+    ):
+        """Test SRS risk score calculation for non-existent file."""
+        nonexistent_file = Path(temp_dir) / "nonexistent.fastq"
+
+        with pytest.raises(FileNotFoundError) as exc_info:
+            analysis_service.calculate_srs_risk_score(nonexistent_file)
+
+        assert "Cannot analyze non-existent file" in str(exc_info.value)
+
+    def test_calculate_srs_risk_score_empty_file(self, analysis_service, temp_dir):
+        """Test SRS risk score calculation for empty file."""
+        test_file = Path(temp_dir) / "empty.fastq"
+        test_file.write_text("")
+
+        risk_score = analysis_service.calculate_srs_risk_score(test_file)
+
+        # Empty file should return 0.0 risk score
+        assert risk_score == 0.0
+
+    def test_calculate_srs_risk_score_invalid_format(self, analysis_service, temp_dir):
+        """Test SRS risk score calculation for invalid fastq format."""
+        test_file = Path(temp_dir) / "invalid.fastq"
+        test_file.write_text("This is not a fastq file\nJust plain text\n")
+
+        risk_score = analysis_service.calculate_srs_risk_score(test_file)
+
+        # Invalid format should return 0.0 (no valid sequences)
+        assert risk_score == 0.0
+
+    def test_read_fastq_sequences_valid_format(self, analysis_service, temp_dir):
+        """Test reading sequences from valid fastq format."""
+        test_file = Path(temp_dir) / "valid.fastq"
+        fastq_content = """@seq1 header
+ATGCGTACGT
++
+HHHHHHHHHH
+@seq2 header
+GGCCAATTGG
++
+IIIIIIIIII
+@seq3 header with spaces
+CCGGTTAACC
++
+JJJJJJJJJJ
+"""
+        test_file.write_text(fastq_content)
+
+        sequences = analysis_service._read_fastq_sequences(test_file)  # noqa: SLF001
+
+        expected_sequences = ["ATGCGTACGT", "GGCCAATTGG", "CCGGTTAACC"]
+        assert sequences == expected_sequences
+
+    def test_read_fastq_sequences_with_invalid_nucleotides(
+        self, analysis_service, temp_dir
+    ):
+        """Test reading sequences that contain invalid nucleotides."""
+        test_file = Path(temp_dir) / "mixed.fastq"
+        fastq_content = """@seq1
+ATGCGTACGT
++
+HHHHHHHHHH
+@seq2_invalid
+XYZTUVWPQR
++
+IIIIIIIIII
+@seq3
+GGCCAATTGG
++
+JJJJJJJJJJ
+"""
+        test_file.write_text(fastq_content)
+
+        sequences = analysis_service._read_fastq_sequences(test_file)  # noqa: SLF001
+
+        # Should only return valid sequences, skipping the invalid one
+        expected_sequences = ["ATGCGTACGT", "GGCCAATTGG"]
+        assert sequences == expected_sequences
+
+    def test_analyze_srs_patterns_empty_sequences(self, analysis_service):
+        """Test SRS pattern analysis with empty sequence list."""
+        risk_score = analysis_service._analyze_srs_patterns([])  # noqa: SLF001
+        assert risk_score == 0.0
+
+    def test_analyze_srs_patterns_single_sequence(self, analysis_service):
+        """Test SRS pattern analysis with single sequence."""
+        sequences = ["ATGCGTACGTCGTAGCTAGCTAG"]
+        risk_score = analysis_service._analyze_srs_patterns(sequences)  # noqa: SLF001
+
+        assert isinstance(risk_score, float)
+        assert 0.0 <= risk_score <= 1.0
+
+    def test_analyze_srs_patterns_multiple_sequences(self, analysis_service):
+        """Test SRS pattern analysis with multiple sequences."""
+        sequences = [
+            "ATGCGTACGTCGTAGCTAGCTAG",
+            "GGCTAGCTAGCTAGCTAGCTAG",
+            "CCCGGGAAATTTCCCGGGAAA",
+            "TTTTAAAACCCCGGGGTTTT",
+        ]
+        risk_score = analysis_service._analyze_srs_patterns(sequences)  # noqa: SLF001
+
+        assert isinstance(risk_score, float)
+        assert 0.0 <= risk_score <= 1.0
+
+    def test_calculate_sequence_diversity_identical_sequences(self, analysis_service):
+        """Test sequence diversity calculation with identical sequences."""
+        sequences = ["ATGCGT"] * 10  # 10 identical sequences
+        diversity_score = analysis_service._calculate_sequence_diversity(sequences)  # noqa: SLF001
+
+        # Identical sequences should result in high risk (low diversity = high risk)
+        assert diversity_score > 0.8
+
+    def test_calculate_sequence_diversity_unique_sequences(self, analysis_service):
+        """Test sequence diversity calculation with unique sequences."""
+        sequences = ["ATGCGT", "GGCCAA", "TTTTGG", "CCCCAA", "AAAATT"]
+        diversity_score = analysis_service._calculate_sequence_diversity(sequences)  # noqa: SLF001
+
+        # Unique sequences should result in low risk (high diversity = low risk)
+        assert diversity_score < 0.5
+
+    def test_calculate_sequence_diversity_single_sequence(self, analysis_service):
+        """Test sequence diversity calculation with single sequence."""
+        sequences = ["ATGCGT"]
+        diversity_score = analysis_service._calculate_sequence_diversity(sequences)  # noqa: SLF001
+
+        # Single sequence should return 0.0
+        assert diversity_score == 0.0
+
+    def test_calculate_gc_content_risk_normal_content(self, analysis_service):
+        """Test GC content risk calculation with normal GC content."""
+        sequences = ["ATGCATGC"] * 5  # 50% GC content
+        gc_risk = analysis_service._calculate_gc_content_risk(sequences)  # noqa: SLF001
+
+        # Normal GC content should result in low risk
+        assert gc_risk == 0.0
+
+    def test_calculate_gc_content_risk_extreme_high_gc(self, analysis_service):
+        """Test GC content risk calculation with extremely high GC content."""
+        sequences = ["GCGCGCGC"] * 5  # 100% GC content
+        gc_risk = analysis_service._calculate_gc_content_risk(sequences)  # noqa: SLF001
+
+        # Extreme GC content should result in high risk
+        assert gc_risk > 0.5
+
+    def test_calculate_gc_content_risk_extreme_low_gc(self, analysis_service):
+        """Test GC content risk calculation with extremely low GC content."""
+        sequences = ["ATATATAT"] * 5  # 0% GC content
+        gc_risk = analysis_service._calculate_gc_content_risk(sequences)  # noqa: SLF001
+
+        # Extreme GC content should result in high risk
+        assert gc_risk > 0.5
+
+    def test_detect_pathogen_motifs_no_motifs(self, analysis_service):
+        """Test pathogen motif detection with sequences containing no motifs."""
+        sequences = ["ATGCAT"] * 10  # Simple sequences without motifs
+        motif_score = analysis_service._detect_pathogen_motifs(sequences)  # noqa: SLF001
+
+        # No motifs should result in zero score
+        assert motif_score == 0.0
+
+    def test_detect_pathogen_motifs_with_motifs(self, analysis_service):
+        """Test pathogen motif detection with sequences containing motifs."""
+        sequences = [
+            "ATGCGTACGTACGTACGTCGTATG",  # Contains potential motif pattern
+            "GGCTAGACGTACGTACGTCTAGGC",  # Contains potential motif pattern
+            "TTTAAACGTACGTACGTAAATTT",  # Contains potential motif pattern
+        ]
+        motif_score = analysis_service._detect_pathogen_motifs(sequences)  # noqa: SLF001
+
+        assert isinstance(motif_score, float)
+        assert 0.0 <= motif_score <= 1.0
+
+    def test_calculate_quality_indicators_high_n_content(self, analysis_service):
+        """Test quality indicators calculation with high N-content."""
+        sequences = ["NNNNNNNNATGCNNNNN"] * 5  # High N-content
+        quality_score = analysis_service._calculate_quality_indicators(sequences)  # noqa: SLF001
+
+        # High N-content should result in higher quality risk
+        assert quality_score > 0.5
+
+    def test_calculate_quality_indicators_good_quality(self, analysis_service):
+        """Test quality indicators calculation with good quality sequences."""
+        sequences = ["ATGCATGCATGC"] * 5  # No N-content
+        quality_score = analysis_service._calculate_quality_indicators(sequences)  # noqa: SLF001
+
+        # Good quality should result in low quality risk
+        assert quality_score == 0.0
+
+    def test_categorize_risk_level_all_levels(self, analysis_service):
+        """Test risk level categorization for all levels."""
+        assert analysis_service._categorize_risk_level(0.9) == "critical"  # noqa: SLF001
+        assert analysis_service._categorize_risk_level(0.8) == "critical"  # noqa: SLF001
+        assert analysis_service._categorize_risk_level(0.7) == "high"  # noqa: SLF001
+        assert analysis_service._categorize_risk_level(0.6) == "high"  # noqa: SLF001
+        assert analysis_service._categorize_risk_level(0.5) == "medium"  # noqa: SLF001
+        assert analysis_service._categorize_risk_level(0.4) == "medium"  # noqa: SLF001
+        assert analysis_service._categorize_risk_level(0.3) == "low"  # noqa: SLF001
+        assert analysis_service._categorize_risk_level(0.0) == "low"  # noqa: SLF001
+
+    def test_analyze_file_with_risk_analysis(self, analysis_service, temp_dir):
+        """Test comprehensive file analysis including risk assessment."""
+        # Create a test file with valid filename and content
+        test_file = Path(temp_dir) / "Mowi_CAGE-01_2025-08-15_S01.fastq"
+        fastq_content = """@seq1
+ATGCGTACGTCGTAGCTAGCTAG
++
+HHHHHHHHHHHHHHHHHHHHHH
+@seq2
+GGCTAGCTAGCTAGCTAGCTAG
++
+IIIIIIIIIIIIIIIIIIIIII
+"""
+        test_file.write_text(fastq_content)
+
+        result = analysis_service.analyze_file(test_file)
+
+        # Check that all expected fields are present
+        assert "filename" in result
+        assert "srs_risk_score" in result
+        assert "risk_analysis_timestamp" in result
+        assert "risk_level" in result
+
+        # Check risk analysis specific fields
+        assert isinstance(result["srs_risk_score"], float)
+        assert 0.0 <= result["srs_risk_score"] <= 1.0
+        assert result["risk_level"] in ["low", "medium", "high", "critical"]
+        assert result["risk_analysis_timestamp"] is not None
+
+        # Check parsed filename fields are still present
+        assert result["partner_id"] == "Mowi"
+        assert result["cage_id"] == "CAGE-01"
+
+    def test_analyze_file_risk_analysis_failure(self, analysis_service, temp_dir):
+        """Test file analysis when risk analysis fails."""
+        # Create an unreadable file to trigger analysis failure
+        test_file = Path(temp_dir) / "unreadable.fastq"
+        test_file.write_text("content")
+
+        # Mock the calculate_srs_risk_score method to raise an exception
+        import unittest.mock
+
+        with unittest.mock.patch.object(
+            analysis_service,
+            "calculate_srs_risk_score",
+            side_effect=OSError("Simulated read error"),
+        ):
+            result = analysis_service.analyze_file(test_file)
+
+        # Check that error handling worked correctly
+        assert result["srs_risk_score"] is None
+        assert result["risk_level"] == "analysis_failed"
+        assert "risk_analysis_error" in result
+        assert "Simulated read error" in result["risk_analysis_error"]
+
+    def test_srs_risk_analysis_logging(self, analysis_service, temp_dir, caplog):
+        """Test that SRS risk analysis generates appropriate log messages."""
+        test_file = Path(temp_dir) / "test.fastq"
+        fastq_content = """@seq1
+ATGCGT
++
+HHHHHH
+"""
+        test_file.write_text(fastq_content)
+
+        with caplog.at_level("INFO"):
+            analysis_service.calculate_srs_risk_score(test_file)
+
+        assert "Starting SRS risk analysis" in caplog.text
+        assert "SRS risk analysis complete" in caplog.text

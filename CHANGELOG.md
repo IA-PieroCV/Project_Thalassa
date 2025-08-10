@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Feature]: Basic FastAPI application skeleton with template and static file support (#34)
 - [Testing]: Comprehensive integration tests for authenticated dashboard endpoint (#36)
 - [Improvement]: Enhanced workflow file management and branch creation safety (workflow-fixes)
+- [Feature]: Core SRS risk analysis model integration with multi-factor algorithm (#30)
 
 ### Changed
 
