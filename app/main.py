@@ -7,7 +7,10 @@ data analysis platform, providing secure file upload and dashboard functionality
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
+from .api.dashboard import router as dashboard_router
 from .api.upload import router as upload_router
 
 app = FastAPI(
@@ -15,6 +18,10 @@ app = FastAPI(
     description="Bioinformatics data analysis platform for SRS risk assessment",
     version="0.1.0",
 )
+
+# Configure template and static file serving
+templates = Jinja2Templates(directory="app/templates")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Configure CORS middleware
 app.add_middleware(
@@ -30,6 +37,7 @@ app.add_middleware(
 
 # Include API routers
 app.include_router(upload_router)
+app.include_router(dashboard_router)
 
 
 @app.get("/")
@@ -41,7 +49,14 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Detailed health check endpoint."""
-    return {"status": "healthy", "service": "thalassa-api", "version": "0.1.0"}
+    return {
+        "status": "healthy",
+        "service": "thalassa-api",
+        "version": "0.1.0",
+        "template_rendering": "enabled",
+        "static_files": "mounted",
+        "components": ["upload", "dashboard"],
+    }
 
 
 if __name__ == "__main__":
