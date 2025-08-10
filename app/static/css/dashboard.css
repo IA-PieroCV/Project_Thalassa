@@ -117,9 +117,46 @@ body {
     color: #e67e22;
 }
 
+.risk-level, .risk-score {
+    font-weight: bold;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+/* Risk level color coding */
+.risk-low {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.risk-medium {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.risk-high {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.risk-critical {
+    background-color: #dc3545;
+    color: white;
+}
+
+.risk-unknown {
+    background-color: #e2e3e5;
+    color: #6c757d;
+}
+
 .status {
     font-weight: bold;
     color: #27ae60;
+}
+
+.error {
+    color: #dc3545;
+    font-weight: bold;
 }
 
 /* Actions Section Styles */
