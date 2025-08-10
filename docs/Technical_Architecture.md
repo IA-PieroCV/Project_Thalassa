@@ -34,8 +34,34 @@ _A simplified description of how the major components and processes interact._
 1.  **Data Upload (Manual):** The pilot partner navigates to a secure upload endpoint on our FastAPI application, authenticates with the shared token, and uploads the `fastq` files directly to the server.
 2.  **File Storage:** The uploaded files are saved directly to the local filesystem of the **OCI VPS**.
 3.  **Analysis Execution (Manual):** A Thalassa team member triggers the analysis function within the same application (or as a separate script) on the **OCI VPS**.
-4.  **Data Processing:** The Python script reads the files from the local filesystem, performs the SRS risk analysis, and outputs the results to a simple `results.json` file, also on the local filesystem.
+4.  **Data Processing:** The Analysis Service automatically discovers and scans uploaded `fastq` files from the local filesystem, performs the SRS risk analysis, and outputs the results to a simple `results.json` file, also on the local filesystem.
 5.  **Dashboard Access:** The partner accesses the dashboard URL, authenticates with the same token, and the FastAPI app displays the results from the `results.json` file.
+
+### 3.1 Analysis Service
+
+The Analysis Service (`app/services/analysis.py`) provides the foundational file discovery and processing capabilities for the SRS risk assessment pipeline:
+
+- **File Discovery:** Automatically scans the upload directory for fastq files with supported extensions (`.fastq`, `.fq`, `.fastq.gz`, `.fq.gz`)
+- **Filename Parsing:** Integrates with the FilenameParser to extract structured metadata from filenames following the `PartnerID_CageID_YYYY-MM-DD_SampleID.fastq` convention
+- **Metadata Extraction:** Retrieves both file system information (size, modification time, compression status) and parsed filename components (partner ID, cage ID, sample date, sample ID)
+- **Filtering & Validation:** Provides methods to filter files by partner or cage, identify invalid filenames, and validate filename compliance
+- **Error Handling:** Comprehensive error handling for directory access, file permissions, and invalid file types with graceful degradation for unparseable filenames
+- **Logging Integration:** Full logging integration for monitoring and debugging file operations and parsing results
+
+The service supports case-insensitive file extension matching, returns sorted results for consistent processing order, and maintains backward compatibility for files with invalid naming patterns.
+
+### 3.2 Filename Parser
+
+The Filename Parser (`app/services/filename_parser.py`) handles the extraction of structured metadata from fastq filenames:
+
+- **Pattern Matching:** Uses regex-based parsing to extract components from the standardized filename format: `PartnerID_CageID_YYYY-MM-DD_SampleID.fastq`
+- **Component Extraction:** Separates filenames into partner ID, cage ID, sample date, sample ID, and file extension
+- **Date Validation:** Validates date components and converts them to datetime objects for further processing
+- **Extension Support:** Recognizes all supported fastq extensions (`.fastq`, `.fq`, `.fastq.gz`, `.fq.gz`) with compression detection
+- **Error Handling:** Provides detailed error messages for malformed filenames while maintaining system stability
+- **Security Considerations:** Implements ReDoS-resistant regex patterns to prevent denial-of-service attacks
+
+The parser is designed to be strict with the naming convention while providing helpful error messages for debugging filename issues.
 
 ---
 
