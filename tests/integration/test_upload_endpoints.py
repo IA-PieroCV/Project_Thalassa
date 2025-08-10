@@ -38,6 +38,19 @@ class TestUploadEndpoints:
         return TestClient(app)
 
     @pytest.fixture
+    def auth_headers(self, monkeypatch):
+        """Create valid authentication headers for testing."""
+        from app.services.auth import AuthService
+
+        # Create a test auth service with the test token
+        test_auth_service = AuthService(bearer_token="test-token-for-integration-tests")
+
+        # Patch the global auth service instance
+        monkeypatch.setattr("app.dependencies.auth.auth_service", test_auth_service)
+
+        return {"Authorization": "Bearer test-token-for-integration-tests"}
+
+    @pytest.fixture
     def temp_fastq_file(self):
         """Create a temporary fastq file for testing."""
         content = b"@SEQ_ID_1\nACGTACGTACGTACGT\n+\nHHHHHHHHHHHHHHHH\n@SEQ_ID_2\nTCGATCGATCGATCGA\n+\nIIIIIIIIIIIIIIII\n"
@@ -74,13 +87,13 @@ class TestUploadEndpoints:
         assert "upload_directory" in data
         assert "directory_exists" in data
 
-    def test_upload_fastq_file_success(self, client, temp_fastq_file):
+    def test_upload_fastq_file_success(self, client, temp_fastq_file, auth_headers):
         """Test successful fastq file upload."""
         # Read the file content
         with open(temp_fastq_file, "rb") as f:
             content = f.read()
         files = {"file": ("Mowi_CAGE-04B_2025-08-15_S01.fastq", content, "text/plain")}
-        response = client.post("/api/v1/upload", files=files)
+        response = client.post("/api/v1/upload", files=files, headers=auth_headers)
 
         assert response.status_code == 200
 
@@ -97,84 +110,86 @@ class TestUploadEndpoints:
         assert metadata["sample_id"] == "S01"
         assert metadata["file_size"] > 0
 
-    def test_upload_invalid_filename(self, client, temp_fastq_file):
+    def test_upload_invalid_filename(self, client, temp_fastq_file, auth_headers):
         """Test upload with invalid filename."""
         with open(temp_fastq_file, "rb") as f:
             content = f.read()
         files = {"file": ("invalid_filename.fastq", content, "text/plain")}
-        response = client.post("/api/v1/upload", files=files)
+        response = client.post("/api/v1/upload", files=files, headers=auth_headers)
 
         assert response.status_code == 400
         data = response.json()
         assert "must follow the pattern" in data["detail"]
 
-    def test_upload_invalid_extension(self, client, temp_fastq_file):
+    def test_upload_invalid_extension(self, client, temp_fastq_file, auth_headers):
         """Test upload with invalid file extension."""
         with open(temp_fastq_file, "rb") as f:
             content = f.read()
         files = {"file": ("Mowi_CAGE-04B_2025-08-15_S01.txt", content, "text/plain")}
-        response = client.post("/api/v1/upload", files=files)
+        response = client.post("/api/v1/upload", files=files, headers=auth_headers)
 
         assert response.status_code == 400
         data = response.json()
         assert "must have .fastq extension" in data["detail"]
 
-    def test_upload_invalid_fastq_content(self, client, invalid_fastq_file):
+    def test_upload_invalid_fastq_content(
+        self, client, invalid_fastq_file, auth_headers
+    ):
         """Test upload with invalid fastq content."""
         with open(invalid_fastq_file, "rb") as f:
             content = f.read()
         files = {"file": ("Mowi_CAGE-04B_2025-08-15_S01.fastq", content, "text/plain")}
-        response = client.post("/api/v1/upload", files=files)
+        response = client.post("/api/v1/upload", files=files, headers=auth_headers)
 
         assert response.status_code == 400
         data = response.json()
         assert "Invalid fastq file format" in data["detail"]
 
-    def test_upload_duplicate_file(self, client, temp_fastq_file):
+    def test_upload_duplicate_file(self, client, temp_fastq_file, auth_headers):
         """Test uploading the same file twice."""
         # First upload
         with open(temp_fastq_file, "rb") as f:
             content = f.read()
         files = {"file": ("Mowi_CAGE-04B_2025-08-15_S02.fastq", content, "text/plain")}
-        response = client.post("/api/v1/upload", files=files)
+        response = client.post("/api/v1/upload", files=files, headers=auth_headers)
 
         assert response.status_code == 200
 
         # Second upload of the same file
         files = {"file": ("Mowi_CAGE-04B_2025-08-15_S02.fastq", content, "text/plain")}
-        response = client.post("/api/v1/upload", files=files)
+        response = client.post("/api/v1/upload", files=files, headers=auth_headers)
 
         assert response.status_code == 409
         data = response.json()
         assert "already exists" in data["detail"]
 
-    def test_upload_no_file(self, client):
+    def test_upload_no_file(self, client, auth_headers):
         """Test upload endpoint without providing a file."""
-        response = client.post("/api/v1/upload")
+        response = client.post("/api/v1/upload", headers=auth_headers)
 
         assert response.status_code == 422  # Validation error
 
-    def test_list_uploaded_files_empty(self, client):
+    def test_list_uploaded_files_empty(self, client, auth_headers):
         """Test listing files when no files are uploaded."""
-        response = client.get("/api/v1/upload/files")
+        response = client.get("/api/v1/upload/files", headers=auth_headers)
 
         assert response.status_code == 200
         data = response.json()
         assert data["files"] == []
         assert data["total_count"] == 0
 
-    def test_upload_and_list_files(self, client, temp_fastq_file):
+    def test_upload_and_list_files(self, client, temp_fastq_file, auth_headers):
         """Test uploading files and then listing them."""
         # Upload a file
         with open(temp_fastq_file, "rb") as f:
             content = f.read()
         files = {"file": ("Mowi_CAGE-04B_2025-08-15_S03.fastq", content, "text/plain")}
-        response = client.post("/api/v1/upload", files=files)
+        response = client.post("/api/v1/upload", files=files, headers=auth_headers)
 
         assert response.status_code == 200
 
         # List files
-        response = client.get("/api/v1/upload/files")
+        response = client.get("/api/v1/upload/files", headers=auth_headers)
 
         assert response.status_code == 200
         data = response.json()
@@ -195,7 +210,7 @@ class TestUploadEndpoints:
         assert file_info["sample_date"] == "2025-08-15"
         assert file_info["sample_id"] == "S03"
 
-    def test_upload_large_file(self, client):
+    def test_upload_large_file(self, client, auth_headers):
         """Test uploading a larger fastq file."""
         # Create a larger fastq content
         sequences = []
@@ -208,7 +223,7 @@ class TestUploadEndpoints:
         content = "\n".join(sequences).encode()
 
         files = {"file": ("Mowi_CAGE-04B_2025-08-15_S04.fastq", content, "text/plain")}
-        response = client.post("/api/v1/upload", files=files)
+        response = client.post("/api/v1/upload", files=files, headers=auth_headers)
 
         assert response.status_code == 200
         data = response.json()

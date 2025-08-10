@@ -5,8 +5,9 @@ This module provides REST API endpoints for uploading and managing
 fastq files according to the project requirements.
 """
 
-from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, UploadFile
 
+from ..dependencies.auth import RequireAuth
 from ..schemas.upload import FileListResponse, UploadResponse
 from ..services.upload import UploadService
 
@@ -17,14 +18,19 @@ upload_service = UploadService()
 
 
 @router.post("/upload", response_model=UploadResponse)
-async def upload_fastq_file(file: UploadFile):
+async def upload_fastq_file(
+    file: UploadFile = File(...),  # noqa: B008
+    _: RequireAuth = None,
+):
     """
-    Upload a fastq file to the server.
+    Upload a fastq file to the server (requires Bearer token authentication).
 
     The file must follow the naming convention:
     PartnerID_CageID_YYYY-MM-DD_SampleID.fastq
 
     Example: Mowi_CAGE-04B_2025-08-15_S01.fastq
+
+    Authentication: Bearer token required in Authorization header.
     """
     try:
         file_path, metadata = await upload_service.save_file(file)
@@ -47,9 +53,11 @@ async def upload_fastq_file(file: UploadFile):
 
 
 @router.get("/upload/files", response_model=FileListResponse)
-async def list_uploaded_files():
+async def list_uploaded_files(_: RequireAuth = None):
     """
     Get a list of all uploaded fastq files with their metadata.
+
+    Authentication: Bearer token required in Authorization header.
     """
     try:
         files = upload_service.get_uploaded_files()
