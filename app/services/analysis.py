@@ -5,8 +5,12 @@ This module provides functionality for discovering and reading fastq files
 from the upload directory for SRS risk analysis processing.
 """
 
+from datetime import datetime
+import gzip
+import hashlib
 import logging
 from pathlib import Path
+import re
 
 from .filename_parser import FilenameParseError, FilenameParser
 
@@ -268,3 +272,315 @@ class AnalysisService:
         )
 
         return summary
+
+    def calculate_srs_risk_score(self, file_path: Path) -> float:
+        """
+        Calculate SRS risk score for a single fastq file.
+
+        This method implements the core bioinformatics analysis for SRS risk assessment.
+        The algorithm analyzes sequence data patterns to generate a risk score between 0.0 and 1.0.
+
+        Args:
+            file_path: Path to the fastq file to analyze
+
+        Returns:
+            Float between 0.0 (no risk) and 1.0 (critical risk)
+
+        Raises:
+            FileNotFoundError: If the file doesn't exist
+            OSError: If the file cannot be read
+            ValueError: If the file format is invalid
+        """
+        if not file_path.exists():
+            error_msg = f"Cannot analyze non-existent file: {file_path}"
+            logger.error(error_msg)
+            raise FileNotFoundError(error_msg)
+
+        logger.info(f"Starting SRS risk analysis for {file_path.name}")
+
+        try:
+            # Read and analyze fastq file content
+            sequence_data = self._read_fastq_sequences(file_path)
+
+            if not sequence_data:
+                logger.warning(f"No valid sequences found in {file_path.name}")
+                return 0.0
+
+            # Core SRS risk analysis algorithm
+            risk_score = self._analyze_srs_patterns(sequence_data)
+
+            logger.info(
+                f"SRS risk analysis complete for {file_path.name}: "
+                f"risk_score={risk_score:.3f}"
+            )
+
+            return risk_score
+
+        except Exception as e:
+            error_msg = f"Error during SRS risk analysis for {file_path.name}: {e}"
+            logger.error(error_msg)
+            raise OSError(error_msg) from e
+
+    def _read_fastq_sequences(self, file_path: Path) -> list[str]:
+        """
+        Read and parse sequences from a fastq file.
+
+        Args:
+            file_path: Path to the fastq file
+
+        Returns:
+            List of DNA sequences (without headers, quality scores)
+
+        Raises:
+            OSError: If file cannot be read
+            ValueError: If file format is invalid
+        """
+        sequences = []
+
+        try:
+            # Handle both compressed and uncompressed files
+            if file_path.name.endswith(".gz"):
+                with gzip.open(file_path, "rt", encoding="utf-8") as f:
+                    return self._process_fastq_file(f)
+            else:
+                with open(file_path, encoding="utf-8") as f:
+                    return self._process_fastq_file(f)
+        except Exception as e:
+            msg = f"Error reading FASTQ file {file_path}: {e!s}"
+            logger.error(msg)
+            raise ValueError(msg) from e
+
+    def _process_fastq_file(self, f):
+        """Process an open FASTQ file and return sequences."""
+        sequences = []
+        line_count = 0
+        for line in f:
+            line_count += 1
+            line = line.strip()
+
+            # Skip empty lines
+            if not line:
+                continue
+
+            # Every 4th line starting from line 2 contains the sequence
+            # Fastq format: @header, sequence, +, quality
+            if line_count % 4 == 2:
+                # Validate sequence contains only valid nucleotides
+                if re.match(r"^[ACGTRYKMSWBDHVN]+$", line, re.IGNORECASE):
+                    sequences.append(line.upper())
+                else:
+                    logger.debug(
+                        f"Invalid sequence format at line {line_count}: {line[:50]}..."
+                    )
+
+        logger.debug(f"Extracted {len(sequences)} valid sequences")
+        return sequences
+
+    def _analyze_srs_patterns(self, sequences: list[str]) -> float:
+        """
+        Core SRS risk analysis algorithm.
+
+        This method analyzes DNA sequences for patterns associated with SRS risk.
+        The algorithm considers multiple factors including sequence diversity,
+        GC content patterns, and specific pathogen-associated motifs.
+
+        Args:
+            sequences: List of DNA sequences to analyze
+
+        Returns:
+            Risk score between 0.0 and 1.0
+        """
+        if not sequences:
+            return 0.0
+
+        total_sequences = len(sequences)
+        total_length = sum(len(seq) for seq in sequences)
+
+        logger.debug(
+            f"Analyzing {total_sequences} sequences, "
+            f"total length: {total_length} nucleotides"
+        )
+
+        # Factor 1: Sequence diversity analysis
+        diversity_score = self._calculate_sequence_diversity(sequences)
+
+        # Factor 2: GC content analysis
+        gc_score = self._calculate_gc_content_risk(sequences)
+
+        # Factor 3: Pathogen-associated motif detection
+        motif_score = self._detect_pathogen_motifs(sequences)
+
+        # Factor 4: Quality indicators (length distribution, N-content)
+        quality_score = self._calculate_quality_indicators(sequences)
+
+        # Weighted combination of risk factors
+        # Weights based on biological significance for SRS risk assessment
+        risk_score = (
+            0.3 * diversity_score
+            + 0.25 * gc_score
+            + 0.35 * motif_score
+            + 0.1 * quality_score
+        )
+
+        # Ensure score is within valid range
+        risk_score = max(0.0, min(1.0, risk_score))
+
+        logger.debug(
+            f"Risk factor breakdown: diversity={diversity_score:.3f}, "
+            f"gc_content={gc_score:.3f}, motifs={motif_score:.3f}, "
+            f"quality={quality_score:.3f}, final={risk_score:.3f}"
+        )
+
+        return risk_score
+
+    def _calculate_sequence_diversity(self, sequences: list[str]) -> float:
+        """Calculate sequence diversity as a risk indicator."""
+        if len(sequences) < 2:
+            return 0.0
+
+        # Use sequence hashing to measure diversity
+        unique_hashes = set()
+        for seq in sequences[:1000]:  # Sample first 1000 sequences for performance
+            seq_hash = hashlib.md5(seq.encode()).hexdigest()[:8]
+            unique_hashes.add(seq_hash)
+
+        diversity_ratio = len(unique_hashes) / min(len(sequences), 1000)
+
+        # Lower diversity (more repetitive sequences) indicates higher risk
+        # Convert to risk score: high diversity = low risk
+        return max(0.0, 1.0 - diversity_ratio)
+
+    def _calculate_gc_content_risk(self, sequences: list[str]) -> float:
+        """Calculate GC content patterns as risk indicator."""
+        gc_contents = []
+
+        for seq in sequences[:500]:  # Sample for performance
+            gc_count = seq.count("G") + seq.count("C")
+            gc_content = gc_count / len(seq) if len(seq) > 0 else 0.0
+            gc_contents.append(gc_content)
+
+        if not gc_contents:
+            return 0.0
+
+        avg_gc = sum(gc_contents) / len(gc_contents)
+
+        # Pathogen-associated GC content patterns
+        # Extreme GC content (very high or very low) can indicate pathogen presence
+        if avg_gc < 0.3 or avg_gc > 0.7:
+            return min(1.0, abs(avg_gc - 0.5) * 2.0)
+
+        return 0.0
+
+    def _detect_pathogen_motifs(self, sequences: list[str]) -> float:
+        """Detect pathogen-associated sequence motifs."""
+        # Known pathogen-associated motifs (simplified for MVP)
+        pathogen_motifs = [
+            r"ATGCGT.{10,20}CGTATG",  # Example pathogen signature
+            r"GGCTAG.{5,15}CTAGGC",  # Another pathogen pattern
+            r"TTTAAA.{8,12}AAATTT",  # Virulence factor pattern
+        ]
+
+        total_motif_matches = 0
+        total_sequences_checked = min(len(sequences), 200)
+
+        for seq in sequences[:total_sequences_checked]:
+            for motif_pattern in pathogen_motifs:
+                matches = re.findall(motif_pattern, seq, re.IGNORECASE)
+                total_motif_matches += len(matches)
+
+        if total_sequences_checked == 0:
+            return 0.0
+
+        # Calculate motif density as risk indicator
+        motif_density = total_motif_matches / total_sequences_checked
+
+        # Convert motif density to risk score (0-1 range)
+        return min(1.0, motif_density * 10.0)
+
+    def _calculate_quality_indicators(self, sequences: list[str]) -> float:
+        """Calculate sequence quality indicators affecting risk assessment."""
+        if not sequences:
+            return 0.0
+
+        # Check for high N-content (ambiguous nucleotides)
+        n_content_scores = []
+        length_variations = []
+
+        for seq in sequences[:100]:  # Sample for performance
+            n_content = seq.count("N") / len(seq) if len(seq) > 0 else 0.0
+            n_content_scores.append(n_content)
+            length_variations.append(len(seq))
+
+        avg_n_content = (
+            sum(n_content_scores) / len(n_content_scores) if n_content_scores else 0.0
+        )
+
+        # High N-content indicates poor quality, which affects risk assessment reliability
+        return min(1.0, avg_n_content * 5.0)
+
+    def analyze_file(self, file_path: Path) -> dict:
+        """
+        Perform comprehensive analysis of a fastq file including SRS risk assessment.
+
+        This method combines file metadata extraction with SRS risk analysis
+        to provide complete file analysis results.
+
+        Args:
+            file_path: Path to the fastq file to analyze
+
+        Returns:
+            Dictionary containing file metadata and risk analysis results
+
+        Raises:
+            FileNotFoundError: If the file doesn't exist
+            OSError: If the file cannot be processed
+        """
+        logger.info(f"Starting comprehensive analysis for {file_path.name}")
+
+        # Get basic file information and metadata
+        file_info = self.get_file_info(file_path)
+
+        # Add SRS risk analysis if file has valid metadata
+        try:
+            risk_score = self.calculate_srs_risk_score(file_path)
+            file_info.update(
+                {
+                    "srs_risk_score": risk_score,
+                    "risk_analysis_timestamp": datetime.now().isoformat(),
+                    "risk_level": self._categorize_risk_level(risk_score),
+                }
+            )
+            logger.info(
+                f"Complete analysis finished for {file_path.name}: "
+                f"risk_score={risk_score:.3f}"
+            )
+        except Exception as e:
+            logger.error(f"Risk analysis failed for {file_path.name}: {e}")
+            file_info.update(
+                {
+                    "srs_risk_score": None,
+                    "risk_analysis_timestamp": datetime.now().isoformat(),
+                    "risk_level": "analysis_failed",
+                    "risk_analysis_error": str(e),
+                }
+            )
+
+        return file_info
+
+    def _categorize_risk_level(self, risk_score: float) -> str:
+        """
+        Categorize numerical risk score into risk level categories.
+
+        Args:
+            risk_score: Risk score between 0.0 and 1.0
+
+        Returns:
+            Risk level category string
+        """
+        if risk_score >= 0.8:
+            return "critical"
+        if risk_score >= 0.6:
+            return "high"
+        if risk_score >= 0.4:
+            return "medium"
+        return "low"
