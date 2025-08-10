@@ -23,7 +23,12 @@ The development process operates through continuous OOD cycles until the MVP is 
 
 ### Cycle Initiation
 1. **Commander Trigger:** The Commander initiates autonomous cycling with commands like `"Begin autonomous cycles"`, `"Make OODA loops"`, or `"Start continuous development"`.
-2. **Autonomous Execution:** You automatically begin continuous OOD cycling until explicitly stopped or MVP completion.
+2. **Clean State Validation:** Before beginning cycles, you MUST verify:
+   - Working directory has no untracked files (`git status --porcelain` shows clean)
+   - Currently on main branch and synced with remote (`git checkout main && git pull origin main`)
+   - No uncommitted changes that could interfere with new work
+   - **If state is not clean, request Commander guidance before proceeding**
+3. **Autonomous Execution:** You automatically begin continuous OOD cycling until explicitly stopped or MVP completion.
 
 ### Individual Cycle Process
 Each cycle follows this sequence:
@@ -285,6 +290,10 @@ When executing tasks directly:
 2. **Maintain Working Directory** in repository root unless task specifically requires otherwise
 3. **Preserve Project Structure** and avoid creating unnecessary subdirectories
 4. **Follow Established Patterns** documented in Technical_Architecture.md
+5. **Maintain Clean State:** Ensure working directory remains clean throughout development:
+   - All files are either tracked by git or explicitly ignored in .gitignore
+   - No untracked files should remain after task completion
+   - The pr-generator handles complete file evaluation and cleanup
 
 ### Repository Context Management
 * **Dynamic Discovery**: NEVER assume repository names or owners. Always discover repository information using:

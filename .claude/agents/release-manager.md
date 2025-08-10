@@ -42,6 +42,9 @@ You MUST execute the following steps sequentially. The workflow branches based o
     - Comment format: "✅ Completed GitHub issue #[number]: [issue-title]. Story in progress."
 
 3b. **Branch Cleanup:**
+    - You MUST verify working directory is clean before cleanup.
+    - **CRITICAL:** If ANY untracked files exist, report as workflow error and skip cleanup.
+    - Expected state: Working directory should be completely clean (pr-generator handles all files).
     - You MUST delete the feature branch locally and remotely.
     - Commands: `git branch -d [branch-name]` and `git push origin --delete [branch-name]`
 
@@ -66,6 +69,9 @@ You MUST execute the following steps sequentially. The workflow branches based o
     - Command: `git push origin --tags`
 
 3d. **Branch Cleanup:**
+    - You MUST verify working directory is clean before cleanup.
+    - **CRITICAL:** If ANY untracked files exist, report as workflow error and skip cleanup.
+    - Expected state: Working directory should be completely clean (pr-generator handles all files).
     - You MUST delete the feature branch locally and remotely.
     - Commands: `git branch -d [branch-name]` and `git push origin --delete [branch-name]`
 

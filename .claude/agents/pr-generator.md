@@ -21,9 +21,21 @@ You WILL be invoked after all coding and implementation for a specific GitHub Is
     - You MUST identify all files that need to be staged and committed.
     - **DO NOT PROCEED if there are no changes to commit.** Report and stop.
 
+1a. **Complete File Evaluation:**
+    - You MUST identify ALL untracked files using `git status --porcelain`.
+    - For each untracked file, you MUST determine if it should be:
+      - **COMMITTED:** Project assets, source code, tests, documentation, configuration files
+      - **IGNORED:** Build artifacts, cache files, temporary files, IDE files, logs
+    - You MUST add appropriate patterns to `.gitignore` for files that should be ignored.
+    - You MUST stage all legitimate project files for commit.
+    - **CRITICAL:** The working directory MUST be completely clean (no untracked files) after PR creation.
+    - **Error Handling:** If uncertain about a file's purpose, default to adding it to `.gitignore` and document the decision.
+
 2.  **Branch Creation & Management:**
-    - You MUST determine the current branch name using `git branch --show-current`.
-    - **IF** you are on the `main` branch, you MUST create a new feature branch with conventional naming:
+    - You MUST ensure you start from a clean, updated main branch.
+    - **ALWAYS** execute: `git checkout main && git pull origin main` to sync with latest changes.
+    - You MUST determine the current branch name using `git branch --show-current` (should be main).
+    - You MUST create a new feature branch with conventional naming:
       - `feat/[description]-issue-[number]` for features
       - `fix/[description]-issue-[number]` for bug fixes
       - `chore/[description]-issue-[number]` for maintenance tasks
