@@ -90,6 +90,9 @@ docs-serve = "mkdocs serve"
 docs-build = "mkdocs build"
 docs-deploy = "mkdocs gh-deploy"
 
+# Analysis
+analyze = "python scripts/generate_results.py"
+
 # Clean up
 clean = "rm -rf .pytest_cache .coverage htmlcov dist __pycache__ .ruff_cache"
 

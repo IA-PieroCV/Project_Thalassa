@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Improvement]: Enhanced workflow file management and branch creation safety (workflow-fixes)
 - [Feature]: Core SRS risk analysis model integration with multi-factor algorithm (#30)
 - [Feature]: Dashboard endpoint logic to read and parse results.json files with live analysis fallback (#38)
+- [Feature]: Batch analysis script for results.json generation with comprehensive unit tests (#31)
 
 ### Changed
 
