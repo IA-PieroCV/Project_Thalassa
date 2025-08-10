@@ -1,0 +1,75 @@
+# Ruff configuration for Project Thalassa
+
+# Basic settings
+line-length = 88
+target-version = "py311"
+
+[lint]
+select = [
+    # Pyflakes
+    "F",
+    # pycodestyle
+    "E", "W",
+    # isort
+    "I",
+    # pep8-naming
+    "N",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # flake8-comprehensions
+    "C4",
+    # flake8-pie
+    "PIE",
+    # flake8-pytest-style
+    "PT",
+    # flake8-return
+    "RET",
+    # flake8-self
+    "SLF",
+    # Ruff-specific rules
+    "RUF",
+]
+
+ignore = [
+    # Allow line length to be longer than 88 for compatibility with FastAPI docstrings
+    "E501",
+    # Allow unused variables when prefixed with _
+    "F841",
+    # Allow asserts in tests
+    "S101",
+]
+
+# Exclude directories
+exclude = [
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "storage",
+]
+
+[lint.per-file-ignores]
+# Tests can use magic values, assertions, and fixtures
+"tests/**/*" = ["PLR2004", "S101", "PT011"]
+
+[format]
+# Like Black, use double quotes for strings
+quote-style = "double"
+# Like Black, indent with spaces, rather than tabs
+indent-style = "space"
+# Like Black, respect magic trailing commas
+skip-magic-trailing-comma = false
+# Like Black, automatically detect the appropriate line ending
+line-ending = "auto"
+
+[lint.isort]
+known-first-party = ["app", "tests"]
+force-sort-within-sections = true
+split-on-trailing-comma = true

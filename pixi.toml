@@ -1,0 +1,99 @@
+[project]
+name = "thalassa"
+version = "0.1.0"
+description = "A bioinformatics data analysis platform for SRS risk assessment, built with FastAPI and Python."
+authors = ["Project Thalassa Team"]
+channels = ["conda-forge", "bioconda", "pyviz"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+
+[dependencies]
+# Core Python runtime
+python = ">=3.11,<3.13"
+
+# Web Framework and API (conda-forge)
+fastapi = ">=0.116.1"
+uvicorn = ">=0.30.0"
+jinja2 = ">=3.1.2"
+
+# Data Science and Bioinformatics (conda-forge)
+numpy = ">=2.3.2"
+pandas = ">=2.3.1"
+scipy = ">=1.16.0"
+scikit-learn = ">=1.7.1"
+biopython = ">=1.85"
+
+# Configuration
+python-dotenv = ">=1.0.0"
+pydantic = ">=2.8.0"
+
+# Security (basic packages)
+cryptography = ">=43.0.0"
+bcrypt = ">=4.2.0"
+
+[pypi-dependencies]
+# PyPI-only packages with extras
+python-multipart = ">=0.0.20"
+python-jose = { version = ">=3.3.0", extras = ["cryptography"] }
+passlib = { version = ">=1.7.4", extras = ["bcrypt"] }
+pydantic-settings = ">=2.4.0"
+ty = ">=0.0.1a17"
+
+[feature.dev.dependencies]
+# Testing framework
+pytest = ">=7.4.0"
+pytest-asyncio = ">=0.21.1"
+httpx = ">=0.24.1"
+pytest-cov = ">=4.1.0"
+
+# Code quality and formatting (using ruff instead of black/flake8)
+ruff = ">=0.9.1"
+
+# Type checking will be installed via PyPI
+
+# Development utilities
+pre-commit = ">=3.5.0"
+
+# Documentation dependencies
+[feature.docs.dependencies]
+mkdocs = ">=1.5.3"
+mkdocs-material = ">=9.4.0"
+mkdocstrings = ">=0.24.0"
+mkdocstrings-python = ">=1.7.0"
+
+[tasks]
+# Development server
+dev = "uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+
+# Testing
+test = "pytest"
+test-cov = "pytest --cov=app --cov-report=html --cov-report=term"
+
+# Code quality
+lint = "ruff check ."
+lint-fix = "ruff check --fix ."
+format = "ruff format ."
+format-check = "ruff format --check ."
+
+# Type checking
+typecheck = "ty check app/"
+
+# Combined quality checks
+check = { depends-on = ["format-check", "lint", "typecheck"] }
+fix = { depends-on = ["format", "lint-fix"] }
+
+# Pre-commit hooks
+pre-commit-install = "pre-commit install"
+pre-commit-run = "pre-commit run --all-files"
+
+# Documentation
+docs-serve = "mkdocs serve"
+docs-build = "mkdocs build"
+docs-deploy = "mkdocs gh-deploy"
+
+# Clean up
+clean = "rm -rf .pytest_cache .coverage htmlcov dist __pycache__ .ruff_cache"
+
+[environments]
+default = { features = ["dev"] }
+prod = { solve-group = "prod" }
+docs = { features = ["dev", "docs"] }

@@ -6,19 +6,24 @@
       "epic_name": "Data Ingestion and Processing",
       "tasks": [
         {
-          "title": "GCP: Provision a Google Cloud Storage bucket",
-          "body": "As per Technical_Architecture.md, create and configure the GCS bucket to be used for partner data ingestion. Set up appropriate lifecycle policies if needed.",
-          "labels": ["gcp", "setup", "infra"]
+          "title": "BE: Create FastAPI endpoint for `fastq` file uploads",
+          "body": "Implement a new POST endpoint in the FastAPI application that accepts `multipart/form-data`. This endpoint will handle the streaming and saving of large `.fastq` files directly to the server's local filesystem as specified in `Technical_Architecture.md`.",
+          "labels": ["backend", "feature", "api", "fastapi"]
         },
         {
-          "title": "GCP: Configure IAM & Security for the GCS bucket",
-          "body": "Establish the necessary IAM permissions to allow the partner a secure way to upload files and the internal analysis service to read them. This may involve creating a service account or using signed URLs.",
-          "labels": ["gcp", "security", "iam"]
+          "title": "BE: Secure upload endpoint with shared Bearer Token authentication",
+          "body": "Apply a security dependency to the file upload endpoint. This dependency must validate a shared Bearer Token provided in the 'Authorization' header. The token should be read from an environment variable for security.",
+          "labels": ["backend", "feature", "security", "auth"]
         },
         {
-          "title": "DOCS: Create data upload guide for the partner",
-          "body": "Write a clear, concise guide for the partner contact on how to upload files to the GCS bucket. The document must include the required file naming convention: `PartnerID_CageID_YYYY-MM-DD_SampleID.fastq`.",
+          "title": "DOCS: Create partner guide for uploading data via API",
+          "body": "Write a simple markdown document for the partner explaining how to use a tool like `cURL` to upload their files. The guide must include the endpoint URL, an example of the `Authorization` header, and the mandatory file naming convention: `PartnerID_CageID_YYYY-MM-DD_SampleID.fastq`.",
           "labels": ["documentation", "partner-facing"]
+        },
+        {
+          "title": "TEST: Write integration test for the authenticated file upload",
+          "body": "Create a Pytest integration test that uses an HTTP client to post a sample file to the upload endpoint with a valid token. The test must assert a `200 OK` response and verify that the file was correctly saved to the designated directory on the filesystem.",
+          "labels": ["testing", "integration-test"]
         }
       ]
     },
@@ -27,34 +32,34 @@
       "epic_name": "Data Ingestion and Processing",
       "tasks": [
         {
-          "title": "BE: Implement GCS file download in analysis script",
-          "body": "Add Python code to the analysis script to securely connect to the Google Cloud Storage bucket and download the latest `fastq` files for processing.",
-          "labels": ["backend", "gcp", "feature"]
-        },
-        {
-          "title": "BE: Implement filename parsing logic",
-          "body": "Add a function to the Python script to parse incoming filenames to extract `CageID` according to the specified `PartnerID_CageID_YYYY-MM-DD_SampleID.fastq` format.",
-          "labels": ["backend", "feature", "parser"]
-        },
-        {
-          "title": "BE: Integrate core analysis model into script",
-          "body": "Create the main Python script that orchestrates the workflow: takes a file path as input, calls the core analysis function, and captures the resulting risk score.",
+          "title": "BE: Implement logic in analysis script to read `.fastq` files from local directory",
+          "body": "The analysis script needs a function that can scan a specific directory on the OCI VPS filesystem (e.g., `/data/uploads`) and return a list of `.fastq` files to be processed.",
           "labels": ["backend", "feature", "data-science"]
         },
         {
-          "title": "BE: Implement JSON output generation",
-          "body": "After analysis, the script must format the results into the specified JSON structure (`[{ \"cageId\": \"...\", \"srsRiskScore\": ..., \"lastUpdated\": \"...\" }]`) and overwrite the `results.json` file on the local filesystem.",
+          "title": "BE: Implement filename parser to extract `PartnerID` and `CageID`",
+          "body": "Create a robust function that takes a filename as input and parses it based on the `PartnerID_CageID_YYYY-MM-DD_SampleID.fastq` convention. It must correctly extract the `CageID` and handle potential naming errors gracefully.",
+          "labels": ["backend", "feature", "parser"]
+        },
+        {
+          "title": "BE: Integrate core SRS risk analysis model into the Python script",
+          "body": "Create a wrapper or main execution function in the script. This function will orchestrate the process: for each input file, it will call the core bioinformatics/AI model and capture the numerical risk score output.",
+          "labels": ["backend", "feature", "data-science"]
+        },
+        {
+          "title": "BE: Implement `results.json` output generation",
+          "body": "After processing all files, the script must aggregate the results and write them to the `results.json` file in the application's root directory. The output must strictly follow the format: `[{ \"cageId\": \"...\", \"srsRiskScore\": ..., \"lastUpdated\": \"...\" }]`. The file should be completely overwritten on each run.",
           "labels": ["backend", "feature", "data-format"]
         },
         {
-          "title": "DEV-OPS: Create Dockerfile for the analysis service",
-          "body": "Write a `Dockerfile` that packages the Python analysis script and all its dependencies into a container image for deployment on the OCI VPS.",
-          "labels": ["devops", "docker", "deployment"]
+          "title": "TEST: Write unit tests for filename parser and JSON output formatter",
+          "body": "Create dedicated unit tests using Pytest for the filename parsing logic and the JSON generation function. Include tests for valid names, names with errors, and edge cases.",
+          "labels": ["testing", "unit-test"]
         },
         {
-          "title": "TEST: Write unit tests for the analysis script",
-          "body": "Create unit tests for the filename parsing function and the JSON output formatting to ensure they are robust and handle edge cases correctly.",
-          "labels": ["testing", "unit-test"]
+          "title": "DEV-OPS: Create single Dockerfile for the combined FastAPI & analysis application",
+          "body": "Create one `Dockerfile` that sets up a Python environment, installs dependencies from `requirements.txt` (including FastAPI, Uvicorn, and any data science libraries), copies all application and script files, and defines the `CMD` to run the Uvicorn server. This single container will be deployed to the OCI VPS.",
+          "labels": ["devops", "docker", "deployment"]
         }
       ]
     },
@@ -63,29 +68,24 @@
       "epic_name": "Risk Reporting & Alerting",
       "tasks": [
         {
-          "title": "BE: Set up basic FastAPI application",
-          "body": "Initialize a new FastAPI project with a basic file structure, including a main application file and a directory for HTML templates.",
+          "title": "BE: Set up basic FastAPI application skeleton",
+          "body": "Initialize the main `main.py` for the FastAPI application. Set up the basic app instance and a simple `/health` check endpoint to confirm it's running.",
           "labels": ["backend", "setup", "api"]
         },
         {
-          "title": "BE: Implement Bearer Token authentication",
-          "body": "Add a security dependency to the FastAPI application to protect endpoints. It must check for a valid, shared Bearer Token in the `Authorization` header. The token must be loaded from an environment variable.",
-          "labels": ["backend", "feature", "security", "auth"]
+          "title": "FE: Create placeholder `dashboard.html` file",
+          "body": "Create a static `dashboard.html` file within a `/templates` directory. It should contain basic HTML boilerplate and a title like 'Thalassa Risk Dashboard'. This will be used to verify the serving mechanism.",
+          "labels": ["frontend", "setup", "ui"]
         },
         {
-          "title": "FE: Create basic HTML placeholder for dashboard",
-          "body": "Create a simple `index.html` file. This will initially serve as a placeholder to confirm the serving mechanism works before adding dynamic data.",
-          "labels": ["frontend", "ui", "setup"]
+          "title": "BE: Create authenticated FastAPI endpoint to serve the dashboard HTML",
+          "body": "Implement a GET endpoint (e.g., at `/`) that is protected by the same shared Bearer Token mechanism. Upon successful authentication, it should use Jinja2Templates to render and return the `dashboard.html` file.",
+          "labels": ["backend", "feature", "api", "auth"]
         },
         {
-          "title": "BE: Create FastAPI endpoint to serve the HTML page",
-          "body": "Implement a GET endpoint that is protected by the Bearer Token authentication and serves the `index.html` file upon successful authentication.",
-          "labels": ["backend", "feature", "api"]
-        },
-        {
-          "title": "DEV-OPS: Create Dockerfile for the FastAPI service",
-          "body": "Write a `Dockerfile` that installs FastAPI, Uvicorn, and other dependencies, then copies the application code and templates into a container image.",
-          "labels": ["devops", "docker", "deployment"]
+          "title": "DOCS: Securely document and share the Bearer Token with the partner",
+          "body": "Create an internal document detailing the shared Bearer Token. Establish a secure, one-time method for communicating this token to the partner's primary contact.",
+          "labels": ["documentation", "security"]
         }
       ]
     },
@@ -94,18 +94,18 @@
       "epic_name": "Risk Reporting & Alerting",
       "tasks": [
         {
-          "title": "BE: Implement logic to read `results.json` in FastAPI",
-          "body": "Enhance the dashboard endpoint to open and read the `results.json` file from the filesystem. The code must parse the JSON data and pass it to the template rendering context. It should gracefully handle the file-not-found case.",
+          "title": "BE: Implement logic in dashboard endpoint to read and parse `results.json`",
+          "body": "Enhance the dashboard GET endpoint. Before rendering the template, the function must read the `results.json` file from the filesystem, parse it into a Python object, and pass it to the template context. It must handle cases where the file doesn't exist yet (e.g., by passing an empty list).",
           "labels": ["backend", "feature", "api"]
         },
         {
-          "title": "FE: Update HTML template to dynamically render results",
-          "body": "Modify the `index.html` file to use a templating engine like Jinja2. Add a loop to iterate through the list of cage data and render each `cageId` and `srsRiskScore` into a simple HTML list.",
+          "title": "FE: Update `dashboard.html` to dynamically render risk scores with Jinja2",
+          "body": "Modify the `dashboard.html` template. Add a Jinja2 for-loop to iterate over the results data passed from the backend. For each item, render a list item or table row displaying the `cageId` and `srsRiskScore`.",
           "labels": ["frontend", "feature", "ui"]
         },
         {
-          "title": "TEST: Write integration test for dashboard endpoint",
-          "body": "Create a test that places a mock `results.json` file in the expected location, then calls the dashboard endpoint with valid authentication. The test must assert that the returned HTML contains the correctly rendered data.",
+          "title": "TEST: Write integration test for dashboard data rendering",
+          "body": "Create an integration test that pre-creates a mock `results.json` file, calls the dashboard endpoint with a valid token, and asserts that the returned HTML body contains the specific data from the mock file.",
           "labels": ["testing", "integration-test"]
         }
       ]
@@ -115,13 +115,13 @@
       "epic_name": "Risk Reporting & Alerting",
       "tasks": [
         {
-          "title": "BE: Add critical score logging to analysis script",
-          "body": "Modify the analysis script to compare each generated score against a configurable threshold. If a score exceeds the threshold, print a prominent warning message to the console output (stdout).",
+          "title": "BE: Add console logging for critical risk scores in analysis script",
+          "body": "In the analysis script, after a score is generated, compare it against a hardcoded or environment-variable-defined threshold (e.g., 0.80). If the score exceeds the threshold, print a highly visible warning to the console (stdout) to alert the running analyst.",
           "labels": ["backend", "feature", "logging"]
         },
         {
-          "title": "DOCS: Create email alert template",
-          "body": "Create a `email_template.txt` file in the project repository. This file will contain the standardized wording for the manual email alert, with placeholders for `[Cage ID]`, `[Risk Score]`, and `[Date of Analysis]`.",
+          "title": "DOCS: Create pre-defined email alert template",
+          "body": "Create a file named `critical_alert_template.txt` in the repository. The file will contain the standard text for the manual email alert, with placeholders like `[Cage ID]`, `[Risk Score]`, and `[Date of Analysis]` for the analyst to fill in.",
           "labels": ["documentation"]
         }
       ]
