@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Feature]: Console logging for critical risk scores with threshold-based alerts and actionable guidance (#41)
 - [Documentation]: Partner API guide for uploading data via API with authentication and troubleshooting (#26)
 - [Documentation]: Comprehensive Bearer Token security guide with partner communication protocols (#37)
+- [Testing]: Enhanced unit tests for filename parser and JSON formatter with comprehensive edge case validation (#32)
 
 ### Changed
 
