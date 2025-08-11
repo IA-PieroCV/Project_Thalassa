@@ -492,6 +492,128 @@ spec:
 
 ## Troubleshooting
 
+### File Permission Issues (Most Common)
+
+**Symptoms:**
+- `[Errno 13] Permission denied: 'uploads/filename.fastq'` when uploading files
+- Cannot write to `/app/uploads`, `/app/results`, or `/app/logs`
+- File operations fail in container
+
+**Root Cause:**
+Docker containers run with different user IDs than your host system, causing permission mismatches with mounted volumes.
+
+**Solutions:**
+
+1. **For Production (Named Volumes - Recommended):**
+   ```bash
+   # Use docker-compose.yml - handles permissions automatically with named volumes
+   docker-compose up -d
+   ```
+
+2. **For Development (Bind Mounts):**
+   ```bash
+   # Ensure your host user has UID 1000
+   id  # Should show uid=1000
+
+   # Use development docker-compose
+   docker-compose -f docker-compose.dev.yml up --build
+
+   # Or specify user explicitly:
+   docker run -d --user "$(id -u):$(id -g)" -p 8000:8000 \
+     -v $(pwd)/uploads:/app/uploads thalassa:latest
+   ```
+
+3. **Fix Existing Directory Permissions:**
+   ```bash
+   # On host system, ensure correct ownership:
+   sudo chown -R $(id -u):$(id -g) uploads/ results/ logs/
+   chmod 755 uploads/ results/ logs/
+   ```
+
+4. **Platform-Specific Solutions:**
+
+   **Linux (Primary Platform):**
+   - Default configuration works (UID 1000)
+   - Dockerfile creates user with UID 1000
+
+   **macOS:**
+   ```bash
+   # Check your UID (may be different)
+   id
+   # Update user in docker-compose.dev.yml if needed:
+   # user: "501:20"  # Common macOS values
+   ```
+
+   **Windows (WSL2):**
+   ```bash
+   # Ensure WSL2 permissions match
+   sudo chown -R $(whoami):$(whoami) uploads/ results/ logs/
+   ```
+
+## Running Commands in Pixi Containers
+
+### Understanding the Pixi Environment
+
+This project uses [Pixi](https://pixi.sh) for environment management in Docker containers. The Dockerfile follows best practices by:
+- Using multi-stage builds with the official Pixi base image
+- Creating a shell-hook activation script (`pixi shell-hook`)
+- Using an entrypoint that activates the Pixi environment before running commands
+- Not including the Pixi executable in the final production image (for security and size)
+
+### Executing Scripts in Containers
+
+#### Method 1: Using the Entrypoint (Recommended for Production)
+```bash
+# Run Python scripts through the entrypoint that activates Pixi
+docker compose exec app /app/entrypoint.sh python scripts/generate_results.py
+
+# Run any command with Pixi environment activated
+docker compose exec app /app/entrypoint.sh python --version
+docker compose exec app /app/entrypoint.sh pytest
+```
+
+#### Method 2: Using Direct Binary Paths (Advanced)
+```bash
+# Use full path to Python in Pixi environment
+docker compose exec app /app/.pixi/envs/prod/bin/python scripts/generate_results.py
+```
+
+### Pixi Tasks Integration
+
+The project includes predefined Pixi tasks in `pixi.toml`:
+```bash
+# Available tasks (when Pixi executable is present):
+pixi run analyze                # Generate analysis results
+pixi run generate-results       # Same as analyze
+pixi run batch-analysis         # Same as analyze
+pixi run test                   # Run tests
+pixi run lint                   # Code linting
+```
+
+**In Docker containers:**
+```bash
+# Since Pixi executable is not in production image, use entrypoint:
+docker compose exec app /app/entrypoint.sh python scripts/generate_results.py
+```
+
+### Development vs Production
+
+**Local Development (with Pixi installed):**
+```bash
+pixi run analyze               # Direct task execution
+pixi shell                     # Enter Pixi shell
+```
+
+**Production Containers:**
+```bash
+# Method 1: Execute in running container
+docker compose exec app /app/entrypoint.sh python scripts/generate_results.py
+docker compose exec app /app/entrypoint.sh pytest
+
+# Method 2: Use dedicated script runner service
+docker-compose --profile scripts run --rm scripts
+```
+
 ### Common Issues
 
 #### Container won't start
@@ -506,13 +628,16 @@ docker events --filter container=thalassa
 docker run -it --entrypoint /bin/bash thalassa:latest
 ```
 
-#### Permission issues
+#### Legacy Permission Issues (If Above Doesn't Work)
 ```bash
-# Fix volume permissions
+# Fix volume permissions inside container
 docker exec thalassa chown -R thalassa:thalassa /app/uploads
 
-# Run with user namespace
+# Run with user namespace remapping
 docker run --userns-remap=default thalassa:latest
+
+# Check container user info
+docker exec thalassa id
 ```
 
 #### Network issues

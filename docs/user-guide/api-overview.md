@@ -42,7 +42,8 @@ Obtain your token from your system administrator or partner coordinator.
 
 | Endpoint | Method | Description | Authentication |
 |----------|--------|-------------|----------------|
-| `/api/v1/dashboard` | GET | View risk assessment dashboard | Yes |
+| `/api/v1/dashboard` | GET | View risk assessment dashboard (shows all analyses) | Yes |
+| `/api/v1/dashboard/data` | GET | Get risk assessment data in JSON format | Yes |
 | `/api/v1/dashboard/health` | GET | Dashboard service health | No |
 
 ## Request/Response Format
@@ -157,6 +158,10 @@ curl -X GET \
 
 **Response:** HTML page with risk assessment visualization
 
+The dashboard automatically detects whether you have single or multiple analysis results:
+- **Multiple Results**: Shows batch analysis summary, risk distribution, and detailed table view
+- **Single Result**: Shows traditional single-entry view with metadata details
+
 ### Get Risk Data (JSON)
 
 **Endpoint:** `GET /api/v1/dashboard/data`
@@ -168,7 +173,31 @@ curl -X GET \
   http://localhost:8000/api/v1/dashboard/data
 ```
 
-**Response (200 OK):**
+**Response for Multiple Results (200 OK):**
+```json
+[
+  {
+    "cageId": "CAGE-04A",
+    "srsRiskScore": 0.752,
+    "riskLevel": "HIGH",
+    "lastUpdated": "2025-08-16T10:30:00Z"
+  },
+  {
+    "cageId": "CAGE-04B",
+    "srsRiskScore": 0.423,
+    "riskLevel": "MEDIUM",
+    "lastUpdated": "2025-08-16T11:15:00Z"
+  },
+  {
+    "cageId": "CAGE-05A",
+    "srsRiskScore": 0.189,
+    "riskLevel": "LOW",
+    "lastUpdated": "2025-08-16T11:45:00Z"
+  }
+]
+```
+
+**Response for Single Result (200 OK):**
 ```json
 {
   "risk_assessments": [
@@ -178,7 +207,7 @@ curl -X GET \
       "riskLevel": "HIGH",
       "lastUpdated": "2025-08-11T12:00:00Z",
       "details": {
-        "samples_analyzed": 5,
+        "samples_analyzed": 1,
         "confidence": 0.95
       }
     }

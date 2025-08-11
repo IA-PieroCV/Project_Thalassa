@@ -5,7 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: development  # Use development stage if multi-stage
+      target: production  # Use production stage (no dev stage exists)
+    user: "1000:1000"  # Match host user for proper file permissions
     container_name: thalassa-dev
     ports:
       - "8000:8000"
@@ -13,6 +14,7 @@ services:
       # Mount source code for hot reloading
       - ./app:/app/app
       - ./tests:/app/tests
+      # Bind mounts for development - host UID 1000 required
       - ./uploads:/app/uploads
       - ./results:/app/results
       - ./logs:/app/logs

@@ -59,17 +59,39 @@ A bioinformatics data analysis platform for SRS risk assessment, built with Fast
 - **Type checking:** `pixi run typecheck`
 - **Run all quality checks:** `pixi run check`
 - **Fix formatting and linting:** `pixi run fix`
+- **Generate analysis results:** `pixi run analyze`
 - **Clean build artifacts:** `pixi run clean`
 
 ### Docker Deployment
 
+#### Using Docker Compose (Recommended)
+```bash
+# Start the application
+docker-compose up -d
+
+# Run scripts in the running container (using entrypoint for Pixi activation)
+docker compose exec app /app/entrypoint.sh python scripts/generate_results.py
+
+# Alternative: Run scripts using dedicated profile
+docker-compose --profile scripts run --rm scripts
+
+# Stop the application
+docker-compose down
+```
+
+#### Using Docker directly
 ```bash
 # Build the container
 docker build -t thalassa .
 
 # Run the container
 docker run -p 8000:8000 thalassa
+
+# Run scripts in container
+docker exec <container_id> /app/entrypoint.sh python scripts/generate_results.py
 ```
+
+**Note:** This project uses Pixi for environment management. In Docker containers, use `/app/entrypoint.sh` to activate the Pixi environment before running Python scripts.
 
 ### Documentation
 
@@ -134,3 +156,22 @@ This project uses a modern Python development stack:
 - **Story:** Partner accesses dashboard with a password (ID: 177)
 - **Story:** Partner views risk scores on the dashboard (ID: 178)
 - **Story:** Analyst manually alerts partner of critical risk (ID: 179)
+
+## Dashboard Features
+
+The risk assessment dashboard supports both single and multi-entry displays:
+
+### Multi-Entry Dashboard
+When multiple FASTQ files have been processed, the dashboard displays:
+- **Batch Analysis Summary**: Total samples, cages monitored, overall risk assessment
+- **Risk Distribution**: Count breakdown of high/medium/low risk samples
+- **Detailed Results Table**: All cage analyses with individual risk scores and timestamps
+- **Responsive Design**: Mobile-friendly table with horizontal scrolling
+
+### Single Entry Dashboard
+When only one analysis is available, displays traditional single-result view with detailed metadata.
+
+### Access
+- **Authentication**: Bearer token required for all dashboard endpoints
+- **Endpoint**: `GET /api/v1/dashboard` (HTML interface)
+- **Data API**: `GET /api/v1/dashboard/data` (JSON format)

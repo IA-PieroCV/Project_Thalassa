@@ -176,33 +176,75 @@ def format_dashboard_context(
     # Handle both new format (with summary) and simple results.json array format
     if isinstance(results, list) and results:
         # Handle simple results.json format (array of cage results)
-        latest_result = results[0]  # Take the first/most recent result
+        # Sort by lastUpdated timestamp to get most recent first
+        sorted_results = sorted(
+            results, key=lambda x: x.get("lastUpdated", ""), reverse=True
+        )
 
-        risk_score = latest_result.get("srsRiskScore", 0.0)
-        cage_id = latest_result.get("cageId")
-        last_updated = latest_result.get("lastUpdated", "Unknown")
+        # Calculate summary statistics for all results
+        total_results = len(sorted_results)
+        high_risk_count = sum(1 for r in results if r.get("srsRiskScore", 0) >= 0.7)
+        medium_risk_count = sum(
+            1 for r in results if 0.3 <= r.get("srsRiskScore", 0) < 0.7
+        )
+        low_risk_count = sum(1 for r in results if r.get("srsRiskScore", 0) < 0.3)
 
-        # Determine risk level based on score
-        if risk_score >= 0.7:
-            risk_level = "high"
-        elif risk_score >= 0.3:
-            risk_level = "medium"
+        # Get unique cage IDs
+        unique_cages = list({r.get("cageId") for r in results if r.get("cageId")})
+
+        # Determine overall risk level based on highest risk in batch
+        max_risk_score = max(r.get("srsRiskScore", 0) for r in results)
+        if max_risk_score >= 0.7:
+            overall_risk_level = "high"
+        elif max_risk_score >= 0.3:
+            overall_risk_level = "medium"
         else:
-            risk_level = "low"
+            overall_risk_level = "low"
+
+        # Prepare all results for template display
+        formatted_results = []
+        for result in sorted_results:
+            risk_score = result.get("srsRiskScore", 0.0)
+            cage_id = result.get("cageId")
+            last_updated = result.get("lastUpdated", "Unknown")
+
+            # Determine individual risk level
+            if risk_score >= 0.7:
+                risk_level = "high"
+            elif risk_score >= 0.3:
+                risk_level = "medium"
+            else:
+                risk_level = "low"
+
+            formatted_results.append(
+                {
+                    "cage_id": cage_id,
+                    "risk_score": f"{risk_score:.3f}",
+                    "risk_level": risk_level,
+                    "last_updated": last_updated,
+                    "numeric_risk_score": risk_score,
+                }
+            )
 
         return {
             "request": request,
-            "filename": f"Analysis for {cage_id}"
-            if cage_id
-            else "SRS Analysis Results",
-            "risk_score": f"{risk_score:.3f}",
-            "risk_level": risk_level,
-            "status": "Analysis completed successfully",
-            "last_updated": last_updated,
+            "filename": f"Batch Analysis Results ({total_results} samples)",
+            "risk_score": f"{max_risk_score:.3f}",
+            "risk_level": overall_risk_level,
+            "status": f"Analysis completed - {total_results} samples processed",
+            "last_updated": sorted_results[0].get("lastUpdated", "Unknown"),
             "partner_id": None,
-            "cage_id": cage_id,
+            "cage_id": f"{len(unique_cages)} cages monitored",
             "sample_date": None,
             "analysis_error": None,
+            # New fields for multi-entry display
+            "all_results": formatted_results,
+            "total_results": total_results,
+            "high_risk_count": high_risk_count,
+            "medium_risk_count": medium_risk_count,
+            "low_risk_count": low_risk_count,
+            "unique_cages": unique_cages,
+            "has_multiple_results": True,
         }
 
     # Handle new format with summary structure
