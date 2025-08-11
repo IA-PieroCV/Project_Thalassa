@@ -21,7 +21,7 @@ Authorization: Bearer YOUR_TOKEN_HERE
 
 ### Endpoint Information
 
-- **URL:** `https://your-server-domain.com/api/v1/upload`
+- **URL:** `https://api.thalassa.io/api/v1/upload` (Production) or `http://localhost:8000/api/v1/upload` (Development)
 - **Method:** POST
 - **Content-Type:** multipart/form-data
 - **Authentication:** Bearer token required
@@ -53,14 +53,14 @@ Here's how to upload a file using cURL:
 curl -X POST \
   -H "Authorization: Bearer YOUR_TOKEN_HERE" \
   -F "file=@/path/to/your/Mowi_CAGE-04B_2025-08-15_S01.fastq" \
-  https://your-server-domain.com/api/v1/upload
+  https://api.thalassa.io/api/v1/upload
 ```
 
 **Replace:**
 - `YOUR_TOKEN_HERE` with your actual Bearer token
 - `/path/to/your/` with the actual path to your file
 - `Mowi_CAGE-04B_2025-08-15_S01.fastq` with your actual filename
-- `your-server-domain.com` with the actual server URL
+- `api.thalassa.io` with localhost:8000 for local testing
 
 ### Successful Upload Response
 

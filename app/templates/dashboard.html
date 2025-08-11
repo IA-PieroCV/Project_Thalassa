@@ -33,6 +33,56 @@
 
             <section class="data-section">
                 <h3>Risk Assessment Results</h3>
+                {% if has_multiple_results %}
+                <!-- Multi-entry results display -->
+                <div class="results-summary">
+                    <div class="summary-card">
+                        <h4>Batch Analysis Summary</h4>
+                        <p><strong>Total Samples:</strong> {{ total_results }}</p>
+                        <p><strong>Cages Monitored:</strong> {{ unique_cages | length }}</p>
+                        <p><strong>Overall Risk Level:</strong> <span class="risk-level risk-{{ risk_level | default('unknown') }}">{{ risk_level | default("Unknown") | title }}</span></p>
+                        <p><strong>Highest Risk Score:</strong> <span class="risk-score risk-{{ risk_level | default('unknown') }}">{{ risk_score | default("Pending analysis") }}</span></p>
+                        <p><strong>Last Updated:</strong> {{ last_updated | default("N/A") }}</p>
+                    </div>
+                    <div class="risk-distribution">
+                        <h5>Risk Distribution</h5>
+                        <div class="risk-counts">
+                            <span class="risk-count risk-high">High Risk: {{ high_risk_count }}</span>
+                            <span class="risk-count risk-medium">Medium Risk: {{ medium_risk_count }}</span>
+                            <span class="risk-count risk-low">Low Risk: {{ low_risk_count }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="results-table-container">
+                    <h4>Detailed Results</h4>
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Cage ID</th>
+                                <th>Risk Score</th>
+                                <th>Risk Level</th>
+                                <th>Last Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in all_results %}
+                            <tr class="result-row risk-row-{{ result.risk_level }}">
+                                <td class="cage-id">{{ result.cage_id }}</td>
+                                <td class="risk-score">
+                                    <span class="risk-score risk-{{ result.risk_level }}">{{ result.risk_score }}</span>
+                                </td>
+                                <td class="risk-level">
+                                    <span class="risk-badge risk-{{ result.risk_level }}">{{ result.risk_level | title }}</span>
+                                </td>
+                                <td class="last-updated">{{ result.last_updated }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <!-- Single entry or no results display -->
                 <div class="data-placeholder">
                     <div class="placeholder-card">
                         <h4>Sample Analysis Results</h4>
@@ -55,6 +105,7 @@
                         {% endif %}
                     </div>
                 </div>
+                {% endif %}
             </section>
 
             <section class="actions-section">

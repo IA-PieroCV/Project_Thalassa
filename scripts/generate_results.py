@@ -60,8 +60,8 @@ def main():
             write_results_json([], results_file)
             return
 
-        # Process each file and aggregate results
-        aggregated_results = []
+        # Process each file and track by cage ID for aggregation
+        cage_results = {}  # cage_id -> list of analyses
         processed_count = 0
         error_count = 0
 
@@ -76,10 +76,20 @@ def main():
                 result_entry = extract_result_data(file_analysis)
 
                 if result_entry:
-                    aggregated_results.append(result_entry)
-                    processed_count += 1
-                    risk_score = result_entry.get("srsRiskScore", 0.0)
                     cage_id = result_entry.get("cageId", "unknown")
+                    risk_score = result_entry.get("srsRiskScore", 0.0)
+
+                    # Group by cage ID for potential aggregation
+                    if cage_id not in cage_results:
+                        cage_results[cage_id] = []
+
+                    # Store file info with result for aggregation logic
+                    result_with_file = result_entry.copy()
+                    result_with_file["_filename"] = file_path.name
+                    result_with_file["_filepath"] = str(file_path)
+                    cage_results[cage_id].append(result_with_file)
+
+                    processed_count += 1
 
                     logger.info(
                         f"Successfully processed {file_path.name} - "
@@ -128,6 +138,9 @@ def main():
                 logger.error(f"Error processing {file_path.name}: {e}")
                 continue
 
+        # Aggregate results by cage ID (use most recent analysis per cage)
+        aggregated_results = aggregate_cage_results(cage_results)
+
         # Write results to JSON file
         write_results_json(aggregated_results, results_file)
 
@@ -144,6 +157,66 @@ def main():
     except Exception as e:
         logger.error(f"Fatal error in batch analysis: {e}")
         sys.exit(1)
+
+
+def aggregate_cage_results(
+    cage_results: dict[str, list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    """
+    Aggregate multiple analyses for the same cage ID.
+
+    Strategy: Use the most recent analysis per cage ID to avoid duplicates.
+    Multiple files for the same cage (e.g., different sample IDs) will be
+    represented by the latest analysis result.
+
+    Args:
+        cage_results: Dictionary mapping cage_id to list of analysis results
+
+    Returns:
+        List of deduplicated results, one per unique cage ID
+    """
+    aggregated = []
+
+    for cage_id, results_list in cage_results.items():
+        if not results_list:
+            continue
+
+        # Log multiple files for same cage
+        if len(results_list) > 1:
+            filenames = [r.get("_filename", "unknown") for r in results_list]
+            logger.info(
+                f"Multiple files found for cage {cage_id}: {filenames} - "
+                f"using most recent analysis"
+            )
+
+        # Sort by timestamp to get most recent
+        sorted_results = sorted(
+            results_list, key=lambda x: x.get("lastUpdated", ""), reverse=True
+        )
+
+        # Use most recent result
+        latest_result = sorted_results[0].copy()
+
+        # Remove internal tracking fields
+        latest_result.pop("_filename", None)
+        latest_result.pop("_filepath", None)
+
+        # Log which file was selected as most recent
+        selected_file = sorted_results[0].get("_filename", "unknown")
+        logger.info(
+            f"Selected most recent analysis for cage {cage_id}: {selected_file}"
+        )
+
+        aggregated.append(latest_result)
+
+    # Sort final results by cage ID for consistent output
+    aggregated.sort(key=lambda x: x.get("cageId", ""))
+
+    logger.info(
+        f"Aggregated {len(aggregated)} unique cages from {sum(len(results) for results in cage_results.values())} total analyses"
+    )
+
+    return aggregated
 
 
 def extract_result_data(file_analysis: dict[str, Any]) -> dict[str, Any] | None:

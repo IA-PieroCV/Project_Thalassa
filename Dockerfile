@@ -55,12 +55,12 @@ COPY .env.example ./
 RUN mkdir -p uploads results logs \
     && chmod 755 uploads results logs
 
-# Create non-root user for security
-RUN groupadd -r thalassa && useradd -r -g thalassa thalassa \
-    && chown -R thalassa:thalassa /app
+# Use existing user with UID 1000 (typically 'ubuntu' in Ubuntu base image)
+RUN EXISTING_USER=$(getent passwd 1000 | cut -d: -f1) \
+    && chown -R $EXISTING_USER:$(getent group 1000 | cut -d: -f1) /app
 
-# Switch to non-root user
-USER thalassa
+# Switch to non-root user with UID 1000
+USER 1000:1000
 
 # Expose the application port
 EXPOSE 8000

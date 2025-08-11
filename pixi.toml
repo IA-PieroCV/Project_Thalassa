@@ -90,8 +90,13 @@ docs-serve = "mkdocs serve"
 docs-build = "mkdocs build"
 docs-deploy = "mkdocs gh-deploy"
 
-# Analysis
+# Analysis and batch processing
 analyze = "python scripts/generate_results.py"
+generate-results = "python scripts/generate_results.py"
+batch-analysis = "python scripts/generate_results.py"
+
+# Docker-specific commands (for when pixi executable is available)
+docker-analyze = { cmd = "python scripts/generate_results.py", description = "Generate analysis results (use in containers: docker compose exec app /app/entrypoint.sh pixi run generate-results)" }
 
 # Clean up
 clean = "rm -rf .pytest_cache .coverage htmlcov dist __pycache__ .ruff_cache"
