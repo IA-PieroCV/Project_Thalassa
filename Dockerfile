@@ -1,5 +1,5 @@
 # Multi-stage build for optimized production image
-FROM ghcr.io/prefix-dev/pixi:0.41.4 AS build
+FROM ghcr.io/prefix-dev/pixi:0.50.2 AS build
 
 WORKDIR /app
 

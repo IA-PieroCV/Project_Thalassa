@@ -97,7 +97,7 @@ Dockerfile.dev
 docker-compose.override.yml
 
 # Documentation development
-.pixi/
+# Note: .pixi/ should NOT be in dockerignore as it's needed during build
 
 # Pre-commit
 .pre-commit-config.yaml
