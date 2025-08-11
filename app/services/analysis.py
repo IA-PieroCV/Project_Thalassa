@@ -12,6 +12,7 @@ import logging
 from pathlib import Path
 import re
 
+from ..config import settings
 from .filename_parser import FilenameParseError, FilenameParser
 
 logger = logging.getLogger(__name__)
@@ -554,6 +555,38 @@ class AnalysisService:
                 f"Complete analysis finished for {file_path.name}: "
                 f"risk_score={risk_score:.3f}"
             )
+
+            # CRITICAL RISK ALERT: Check if risk score exceeds threshold
+            if risk_score >= settings.critical_risk_threshold:
+                cage_id = file_info.get("cage_id", "unknown")
+                print("\n" + "=" * 80)
+                print("🚨 CRITICAL RISK ALERT 🚨")
+                print("=" * 80)
+                print("HIGH RISK DETECTED - IMMEDIATE ATTENTION REQUIRED")
+                print("")
+                print(f"Cage ID: {cage_id}")
+                print(f"Risk Score: {risk_score:.3f}")
+                print(f"Threshold: {settings.critical_risk_threshold}")
+                print(f"File: {file_path.name}")
+                print(f"Analysis Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                print("")
+                print(
+                    f"ACTION REQUIRED: Review operational procedures for Cage {cage_id}"
+                )
+                print("and implement appropriate risk mitigation measures.")
+                print("")
+                print(
+                    "Please refer to the critical_alert_template.txt for email notification."
+                )
+                print("=" * 80)
+                print()
+
+                # Also log the critical alert to the logger
+                logger.critical(
+                    f"CRITICAL RISK DETECTED - Cage {cage_id} has risk score "
+                    f"{risk_score:.3f} (>= {settings.critical_risk_threshold}) - "
+                    f"IMMEDIATE ACTION REQUIRED"
+                )
         except Exception as e:
             logger.error(f"Risk analysis failed for {file_path.name}: {e}")
             file_info.update(

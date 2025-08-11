@@ -17,6 +17,7 @@ from typing import Any
 # Add the app directory to Python path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from app.config import settings
 from app.services.analysis import AnalysisService
 
 # Configure logging
@@ -77,11 +78,47 @@ def main():
                 if result_entry:
                     aggregated_results.append(result_entry)
                     processed_count += 1
+                    risk_score = result_entry.get("srsRiskScore", 0.0)
+                    cage_id = result_entry.get("cageId", "unknown")
+
                     logger.info(
                         f"Successfully processed {file_path.name} - "
-                        f"cage_id: {result_entry.get('cageId')}, "
-                        f"risk_score: {result_entry.get('srsRiskScore'):.3f}"
+                        f"cage_id: {cage_id}, "
+                        f"risk_score: {risk_score:.3f}"
                     )
+
+                    # CRITICAL RISK ALERT: Check if risk score exceeds threshold
+                    if risk_score >= settings.critical_risk_threshold:
+                        print("\n" + "=" * 80)
+                        print("🚨 CRITICAL RISK ALERT 🚨")
+                        print("=" * 80)
+                        print("HIGH RISK DETECTED - IMMEDIATE ATTENTION REQUIRED")
+                        print("")
+                        print(f"Cage ID: {cage_id}")
+                        print(f"Risk Score: {risk_score:.3f}")
+                        print(f"Threshold: {settings.critical_risk_threshold}")
+                        print(f"File: {file_path.name}")
+                        print(
+                            f"Analysis Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                        )
+                        print("")
+                        print(
+                            f"ACTION REQUIRED: Review operational procedures for Cage {cage_id}"
+                        )
+                        print("and implement appropriate risk mitigation measures.")
+                        print("")
+                        print(
+                            "Please refer to the critical_alert_template.txt for email notification."
+                        )
+                        print("=" * 80)
+                        print()
+
+                        # Also log the critical alert to the logger
+                        logger.critical(
+                            f"CRITICAL RISK DETECTED - Cage {cage_id} has risk score "
+                            f"{risk_score:.3f} (>= {settings.critical_risk_threshold}) - "
+                            f"IMMEDIATE ACTION REQUIRED"
+                        )
                 else:
                     error_count += 1
                     logger.warning(f"Skipped {file_path.name} - missing required data")
