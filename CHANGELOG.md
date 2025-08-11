@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Feature]: Batch analysis script for results.json generation with comprehensive unit tests (#31)
 - [Feature]: Dashboard template dynamically renders risk scores with Jinja2 from results.json data (#39)
 - [Testing]: Comprehensive integration test for dashboard data rendering with mock results.json validation (#40)
+- [Documentation]: Critical alert email template with complete usage instructions and example (#42)
 
 ### Changed
 
