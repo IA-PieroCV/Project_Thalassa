@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Documentation]: Partner API guide for uploading data via API with authentication and troubleshooting (#26)
 - [Documentation]: Comprehensive Bearer Token security guide with partner communication protocols (#37)
 - [Testing]: Enhanced unit tests for filename parser and JSON formatter with comprehensive edge case validation (#32)
+- [Testing]: Integration test for authenticated file upload with HTTP client validation and filesystem verification (#27)
 
 ### Changed
 
