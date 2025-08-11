@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Documentation]: Critical alert email template with complete usage instructions and example (#42)
 - [Feature]: Console logging for critical risk scores with threshold-based alerts and actionable guidance (#41)
 - [Documentation]: Partner API guide for uploading data via API with authentication and troubleshooting (#26)
+- [Documentation]: Comprehensive Bearer Token security guide with partner communication protocols (#37)
 
 ### Changed
 
