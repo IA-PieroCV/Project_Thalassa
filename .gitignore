@@ -150,7 +150,6 @@ venv.bak/
 
 # Pixi package manager
 .pixi/
-pixi.lock
 
 # Ruff
 .ruff_cache/
