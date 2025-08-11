@@ -104,6 +104,69 @@ class TestExtractResultData:
         result = extract_result_data(file_analysis)
         assert result is None
 
+    def test_extract_data_extreme_numeric_values(self):
+        """Test extraction with extreme numeric values and edge cases."""
+        extreme_cases = [
+            # Very high risk score
+            {
+                "cage_id": "EXTREME-HIGH",
+                "srs_risk_score": 999.999,
+                "risk_analysis_timestamp": "2025-08-10T12:00:00.000000",
+            },
+            # Zero risk score
+            {
+                "cage_id": "ZERO-RISK",
+                "srs_risk_score": 0.0,
+                "risk_analysis_timestamp": "2025-08-10T12:00:00.000000",
+            },
+            # Negative risk score (should still work, though not expected in real use)
+            {
+                "cage_id": "NEGATIVE",
+                "srs_risk_score": -0.1,
+                "risk_analysis_timestamp": "2025-08-10T12:00:00.000000",
+            },
+            # Very long cage ID
+            {
+                "cage_id": "VERY-LONG-CAGE-ID-" + "X" * 100,
+                "srs_risk_score": 0.5,
+                "risk_analysis_timestamp": "2025-08-10T12:00:00.000000",
+            },
+        ]
+
+        for case in extreme_cases:
+            result = extract_result_data(case)
+            assert result is not None
+            assert result["cageId"] == str(case["cage_id"])
+            assert result["srsRiskScore"] == float(case["srs_risk_score"])
+            assert result["lastUpdated"] == case["risk_analysis_timestamp"]
+
+    def test_extract_data_none_values(self):
+        """Test extraction explicitly handles None values correctly."""
+        test_cases = [
+            # cage_id is None
+            {
+                "cage_id": None,
+                "srs_risk_score": 0.75,
+                "risk_analysis_timestamp": "2025-08-10T12:00:00.000000",
+            },
+            # srs_risk_score is None
+            {
+                "cage_id": "CAGE-01A",
+                "srs_risk_score": None,
+                "risk_analysis_timestamp": "2025-08-10T12:00:00.000000",
+            },
+            # Both critical fields are None
+            {
+                "cage_id": None,
+                "srs_risk_score": None,
+                "risk_analysis_timestamp": "2025-08-10T12:00:00.000000",
+            },
+        ]
+
+        for case in test_cases:
+            result = extract_result_data(case)
+            assert result is None
+
 
 class TestWriteResultsJson:
     """Test the write_results_json function."""
@@ -214,6 +277,42 @@ class TestWriteResultsJson:
 
         with pytest.raises(OSError):  # Should raise OSError for permission/path issues
             write_results_json(results, invalid_path)
+
+    def test_write_json_with_unicode_and_special_characters(self):
+        """Test writing JSON with unicode characters and special values."""
+        results = [
+            {
+                "cageId": "CAFÉ-Søren-01",  # Unicode characters
+                "srsRiskScore": 0.5,
+                "lastUpdated": "2025-08-10T12:00:00.000000",
+            },
+            {
+                "cageId": "CAGE_WITH_SPACES",  # Spaces in cage ID
+                "srsRiskScore": 1.0,
+                "lastUpdated": "2025-08-10T12:01:00.000000",
+            },
+            {
+                "cageId": 'CAGE"WITH"QUOTES',  # Quotes in cage ID
+                "srsRiskScore": 0.0,
+                "lastUpdated": "2025-08-10T12:02:00.000000",
+            },
+        ]
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            results_file = Path(temp_dir) / "results.json"
+
+            write_results_json(results, results_file)
+
+            # Verify file was created and JSON is valid
+            assert results_file.exists()
+
+            with open(results_file, encoding="utf-8") as f:
+                written_data = json.load(f)
+
+            assert len(written_data) == 3
+            assert written_data[0]["cageId"] == "CAFÉ-Søren-01"
+            assert written_data[1]["cageId"] == "CAGE_WITH_SPACES"
+            assert written_data[2]["cageId"] == 'CAGE"WITH"QUOTES'
 
 
 class TestIntegrationScenarios:

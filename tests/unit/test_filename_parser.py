@@ -304,3 +304,55 @@ class TestFilenameParser:
             except FilenameParseError:
                 # It's okay if it fails to parse, as long as it fails quickly
                 pass
+
+    def test_unicode_and_special_characters(self, parser):
+        """Test handling of unicode and special characters in filenames."""
+        test_cases = [
+            # Unicode characters should be handled gracefully (may fail parsing)
+            "Søren_CAGE-01_2025-08-15_S01.fastq",
+            "Partner_CAFÉ-01_2025-08-15_S01.fastq",
+            # Special characters in components
+            "Partner@Corp_CAGE-01_2025-08-15_S01.fastq",
+            "Partner_CAGE#01_2025-08-15_S01.fastq",
+            "Partner_CAGE-01_2025-08-15_S01$.fastq",
+        ]
+
+        for filename in test_cases:
+            # These should either parse or raise FilenameParseError, not crash
+            try:
+                result = parser.parse_filename(filename)
+                # If parsing succeeds, verify structure is intact
+                assert "partner_id" in result
+                assert "cage_id" in result
+                assert "sample_id" in result
+            except FilenameParseError:
+                # Expected for invalid characters
+                pass
+
+    def test_boundary_date_values(self, parser):
+        """Test parsing with boundary date values and leap year edge cases."""
+        boundary_cases = [
+            # Leap year boundary tests
+            "Partner_Cage_2024-02-29_S01.fastq",  # Valid leap year
+            "Partner_Cage_2100-02-29_S01.fastq",  # Invalid leap year (divisible by 100, not 400)
+            # Month boundary tests
+            "Partner_Cage_2025-04-31_S01.fastq",  # Invalid - April has 30 days
+            "Partner_Cage_2025-09-31_S01.fastq",  # Invalid - September has 30 days
+        ]
+
+        valid_boundaries = ["Partner_Cage_2024-02-29_S01.fastq"]
+        invalid_boundaries = [
+            "Partner_Cage_2100-02-29_S01.fastq",
+            "Partner_Cage_2025-04-31_S01.fastq",
+            "Partner_Cage_2025-09-31_S01.fastq",
+        ]
+
+        # Valid boundary cases should parse successfully
+        for filename in valid_boundaries:
+            result = parser.parse_filename(filename)
+            assert result["date"] in filename
+
+        # Invalid boundary cases should raise errors
+        for filename in invalid_boundaries:
+            with pytest.raises(FilenameParseError):
+                parser.parse_filename(filename)
