@@ -4,8 +4,9 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: thalassa-app
-    ports:
-      - "8000:8000"
+    # Remove direct port mapping since nginx-proxy will handle it
+    expose:
+      - "8000"
     volumes:
       - upload-data:/app/uploads
       - results-data:/app/results
@@ -18,11 +19,16 @@ services:
       - HOST=0.0.0.0
       - PORT=8000
       - LOG_LEVEL=INFO
+      # nginx-proxy configuration
+      - VIRTUAL_HOST=thalassa.intautomation.org
+      - VIRTUAL_PORT=8000
+      - LETSENCRYPT_HOST=thalassa.intautomation.org
+      - LETSENCRYPT_EMAIL=piero.casusolia@gmail.com
     env_file:
       - .env
     restart: unless-stopped
     networks:
-      - thalassa-network
+      - thalassa_ssl_network
     healthcheck:
       test: ["CMD", "python3", "-c", "import requests; requests.get('http://localhost:8000/health')"]
       interval: 30s
@@ -57,8 +63,8 @@ services:
   #   restart: unless-stopped
 
 networks:
-  thalassa-network:
-    driver: bridge
+  thalassa_ssl_network:
+    external: true
 
 volumes:
   upload-data:
