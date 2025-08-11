@@ -1,0 +1,98 @@
+PROJECT THALASSA - CRITICAL RISK ALERT TEMPLATE
+===================================================
+
+SUBJECT LINE TEMPLATE:
+[URGENT] High Risk Detected - Cage [Cage ID] - Requires Immediate Attention
+
+EMAIL BODY TEMPLATE:
+-------------------
+
+Dear Partner,
+
+URGENT: Critical Risk Level Detected
+
+We are writing to inform you that our SRS risk assessment analysis has identified a critical risk level in one of your samples that requires immediate attention.
+
+ANALYSIS DETAILS:
+• Cage ID: [Cage ID]
+• Risk Score: [Risk Score]
+• Risk Level: CRITICAL
+• Date of Analysis: [Date of Analysis]
+• Analysis Platform: Project Thalassa Bioinformatics System
+
+IMMEDIATE ACTION REQUIRED:
+Please review your operational procedures for Cage [Cage ID] immediately and implement appropriate risk mitigation measures according to your established protocols.
+
+NEXT STEPS:
+1. Acknowledge receipt of this alert
+2. Conduct immediate assessment of Cage [Cage ID]
+3. Implement containment measures as per your risk management procedures
+4. Contact our team if you require additional analysis or support
+
+For questions or additional support, please contact:
+[Your Contact Information]
+
+This is an automated alert based on our bioinformatics analysis. Please treat this with the highest priority.
+
+Best regards,
+[Your Name]
+[Your Title]
+Project Thalassa Analysis Team
+
+-------------------
+
+USAGE INSTRUCTIONS:
+===================
+
+1. Copy the subject line template and replace:
+   • [Cage ID] with the actual cage identifier (e.g., "CAGE-04B")
+
+2. Copy the email body template and replace ALL placeholders:
+   • [Cage ID] - Replace with the cage identifier from analysis results
+   • [Risk Score] - Replace with the numerical risk score (e.g., "0.85")
+   • [Date of Analysis] - Replace with the analysis date (e.g., "August 10, 2025")
+   • [Your Contact Information] - Replace with your contact details
+   • [Your Name] - Replace with analyst name
+   • [Your Title] - Replace with your job title
+
+3. Review the completed email for accuracy before sending
+
+4. Send to the designated partner contact(s) immediately
+
+EXAMPLE COMPLETED EMAIL:
+========================
+
+Subject: [URGENT] High Risk Detected - Cage CAGE-04B - Requires Immediate Attention
+
+Dear Partner,
+
+URGENT: Critical Risk Level Detected
+
+We are writing to inform you that our SRS risk assessment analysis has identified a critical risk level in one of your samples that requires immediate attention.
+
+ANALYSIS DETAILS:
+• Cage ID: CAGE-04B
+• Risk Score: 0.87
+• Risk Level: CRITICAL
+• Date of Analysis: August 11, 2025
+• Analysis Platform: Project Thalassa Bioinformatics System
+
+IMMEDIATE ACTION REQUIRED:
+Please review your operational procedures for Cage CAGE-04B immediately and implement appropriate risk mitigation measures according to your established protocols.
+
+NEXT STEPS:
+1. Acknowledge receipt of this alert
+2. Conduct immediate assessment of Cage CAGE-04B
+3. Implement containment measures as per your risk management procedures
+4. Contact our team if you require additional analysis or support
+
+For questions or additional support, please contact:
+Email: analyst@thalassa-bio.com
+Phone: +1-555-THALASSA
+
+This is an automated alert based on our bioinformatics analysis. Please treat this with the highest priority.
+
+Best regards,
+Dr. Sarah Johnson
+Senior Bioinformatics Analyst
+Project Thalassa Analysis Team
