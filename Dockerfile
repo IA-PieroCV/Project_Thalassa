@@ -28,6 +28,7 @@ WORKDIR /app
 # Install only essential runtime dependencies
 RUN apt-get update && apt-get install -y \
     ca-certificates \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Set environment variables for production
@@ -43,6 +44,9 @@ COPY --from=build --chmod=0755 /app/entrypoint.sh /app/entrypoint.sh
 
 # Copy application code
 COPY app/ ./app/
+
+# Copy scripts directory for analysis functionality
+COPY scripts/ ./scripts/
 
 # Copy environment configuration template
 COPY .env.example ./

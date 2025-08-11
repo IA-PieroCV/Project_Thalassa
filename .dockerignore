@@ -107,7 +107,6 @@ tests/
 
 # Development scripts
 run_dev.py
-scripts/
 
 # Configuration examples (keep .env.example)
 .env
