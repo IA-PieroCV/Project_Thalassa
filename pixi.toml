@@ -1,6 +1,6 @@
 [project]
 name = "thalassa"
-version = "0.1.0"
+version = "1.0.0"
 description = "A bioinformatics data analysis platform for SRS risk assessment, built with FastAPI and Python."
 authors = ["Project Thalassa Team"]
 channels = ["conda-forge", "bioconda", "pyviz"]

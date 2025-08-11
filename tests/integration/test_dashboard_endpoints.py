@@ -175,11 +175,12 @@ class TestDashboardEndpoints:
             # Check for risk level (0.85 should be categorized as "high")
             assert "high" in html_content
 
-            # Check for the analysis completed status
-            assert "Analysis completed successfully" in html_content
+            # Check for the analysis completed status (multi-entry format)
+            assert "Analysis completed - 1 samples processed" in html_content
 
-            # Check for the formatted filename
-            assert "Analysis for CAGE-TEST-42" in html_content
+            # Check for the multi-entry dashboard elements
+            assert "Batch Analysis Summary" in html_content
+            assert "Total Samples:</strong> 1" in html_content
 
             # Ensure placeholder content is NOT present when we have real data
             assert "No files processed yet" not in html_content

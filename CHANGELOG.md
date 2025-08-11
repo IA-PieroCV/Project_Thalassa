@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Testing]: Integration test for authenticated file upload with HTTP client validation and filesystem verification (#27)
 
 ### Changed
+- [Refactor]: Centralized environment-driven version management system to eliminate hardcoded version references across codebase
 
 ### Fixed
 - [DevOps]: Single Dockerfile for combined FastAPI & analysis application with proper scripts access (#33)
