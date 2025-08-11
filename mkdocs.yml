@@ -1,8 +1,8 @@
 site_name: Project Thalassa
 site_description: A bioinformatics data analysis platform for SRS risk assessment
-site_url: https://thalassa.example.com
-repo_url: https://github.com/your-org/salmon
-repo_name: your-org/salmon
+site_url: https://ia-pierocv.github.io/Project_Thalassa
+repo_url: https://github.com/IA-PieroCV/Project_Thalassa
+repo_name: IA-PieroCV/Project_Thalassa
 
 theme:
   name: material
@@ -47,7 +47,7 @@ nav:
     - Contributing: development/contributing.md
     - Testing: development/testing.md
     - Docker: development/docker.md
-  - Changelog: changelog.md
+  - Changelog: ../CHANGELOG.md
 
 plugins:
   - search
