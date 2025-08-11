@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Feature]: Dashboard endpoint logic to read and parse results.json files with live analysis fallback (#38)
 - [Feature]: Batch analysis script for results.json generation with comprehensive unit tests (#31)
 - [Feature]: Dashboard template dynamically renders risk scores with Jinja2 from results.json data (#39)
+- [Testing]: Comprehensive integration test for dashboard data rendering with mock results.json validation (#40)
 
 ### Changed
 

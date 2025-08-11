@@ -87,10 +87,20 @@ class TestDashboardEndpoints:
         assert data["template_support"] == "configured"
         assert data["static_files"] == "mounted"
 
-    @pytest.mark.skip(reason="Requires valid bearer token configuration")
-    def test_dashboard_with_valid_auth_succeeds(self, client, valid_auth_headers):
+    def test_dashboard_with_valid_auth_succeeds(self, client, monkeypatch):
         """Test that dashboard access with valid authentication succeeds."""
-        response = client.get("/api/v1/dashboard", headers=valid_auth_headers)
+        from app.services.auth import AuthService
+
+        # Create a test auth service with the test token
+        test_auth_service = AuthService(bearer_token="test-token-dashboard-auth")
+
+        # Patch the global auth service instance
+        monkeypatch.setattr("app.dependencies.auth.auth_service", test_auth_service)
+
+        # Create valid auth headers
+        auth_headers = {"Authorization": "Bearer test-token-dashboard-auth"}
+
+        response = client.get("/api/v1/dashboard", headers=auth_headers)
 
         assert response.status_code == 200
         assert "text/html" in response.headers.get("content-type", "")
@@ -109,22 +119,163 @@ class TestDashboardEndpoints:
         assert "www-authenticate" in response.headers
         assert response.headers["www-authenticate"] == "Bearer"
 
-    @pytest.mark.skip(reason="Requires valid bearer token configuration")
-    def test_dashboard_template_context_variables(self, client, valid_auth_headers):
-        """Test that dashboard template receives proper context variables."""
-        response = client.get("/api/v1/dashboard", headers=valid_auth_headers)
+    def test_dashboard_data_rendering_with_mock_results(self, client, monkeypatch):
+        """Integration test: dashboard endpoint renders actual data from results.json."""
+        import json
+        from pathlib import Path
+        import tempfile
 
-        assert response.status_code == 200
-        html_content = response.text
+        from app.services.auth import AuthService
 
-        # Check for template context variables in the rendered HTML
-        # These should appear in the dashboard based on the current implementation
-        assert (
-            "Placeholder - No files processed yet" in html_content
-            or "filename" in html_content
-        )
-        assert "Pending analysis setup" in html_content or "risk_score" in html_content
-        assert "Dashboard template ready" in html_content or "status" in html_content
+        # Create a test auth service with the test token
+        test_auth_service = AuthService(bearer_token="test-token-dashboard-integration")
+
+        # Patch the global auth service instance
+        monkeypatch.setattr("app.dependencies.auth.auth_service", test_auth_service)
+
+        # Create a temporary results.json file with specific test data
+        with tempfile.TemporaryDirectory() as temp_dir:
+            results_dir = Path(temp_dir)
+            results_file = results_dir / "results.json"
+
+            # Create mock results.json with the format the system expects
+            mock_results = [
+                {
+                    "cageId": "CAGE-TEST-42",
+                    "srsRiskScore": 0.85,
+                    "lastUpdated": "2025-08-11T10:30:00.123456",
+                }
+            ]
+
+            with open(results_file, "w") as f:
+                json.dump(mock_results, f)
+
+            # Patch the RESULTS_DIR to point to our temp directory
+            monkeypatch.setattr("app.api.dashboard.RESULTS_DIR", results_dir)
+
+            # Create valid auth headers
+            auth_headers = {"Authorization": "Bearer test-token-dashboard-integration"}
+
+            # Call the dashboard endpoint
+            response = client.get("/api/v1/dashboard", headers=auth_headers)
+
+            # Assert successful response
+            assert response.status_code == 200
+            assert "text/html" in response.headers.get("content-type", "")
+
+            # Assert that the HTML contains specific data from our mock results.json
+            html_content = response.text
+
+            # Check for the specific cage ID from our mock data
+            assert "CAGE-TEST-42" in html_content
+
+            # Check for the formatted risk score (should be formatted as 0.850)
+            assert "0.850" in html_content
+
+            # Check for risk level (0.85 should be categorized as "high")
+            assert "high" in html_content
+
+            # Check for the analysis completed status
+            assert "Analysis completed successfully" in html_content
+
+            # Check for the formatted filename
+            assert "Analysis for CAGE-TEST-42" in html_content
+
+            # Ensure placeholder content is NOT present when we have real data
+            assert "No files processed yet" not in html_content
+            assert "Pending analysis setup" not in html_content
+
+    def test_dashboard_data_rendering_different_risk_levels(self, client, monkeypatch):
+        """Test dashboard renders different risk levels correctly."""
+        import json
+        from pathlib import Path
+        import tempfile
+
+        from app.services.auth import AuthService
+
+        # Test scenarios: low, medium, high risk
+        test_scenarios = [
+            {"risk_score": 0.15, "expected_level": "low", "cage_id": "CAGE-LOW-01"},
+            {"risk_score": 0.45, "expected_level": "medium", "cage_id": "CAGE-MED-02"},
+            {"risk_score": 0.75, "expected_level": "high", "cage_id": "CAGE-HIGH-03"},
+        ]
+
+        for scenario in test_scenarios:
+            # Create a test auth service with the test token
+            test_auth_service = AuthService(bearer_token="test-token-risk-levels")
+
+            # Patch the global auth service instance
+            monkeypatch.setattr("app.dependencies.auth.auth_service", test_auth_service)
+
+            with tempfile.TemporaryDirectory() as temp_dir:
+                results_dir = Path(temp_dir)
+                results_file = results_dir / "results.json"
+
+                # Create mock results.json for this scenario
+                mock_results = [
+                    {
+                        "cageId": scenario["cage_id"],
+                        "srsRiskScore": scenario["risk_score"],
+                        "lastUpdated": "2025-08-11T10:30:00.123456",
+                    }
+                ]
+
+                with open(results_file, "w") as f:
+                    json.dump(mock_results, f)
+
+                # Patch the RESULTS_DIR to point to our temp directory
+                monkeypatch.setattr("app.api.dashboard.RESULTS_DIR", results_dir)
+
+                # Create valid auth headers
+                auth_headers = {"Authorization": "Bearer test-token-risk-levels"}
+
+                # Call the dashboard endpoint
+                response = client.get("/api/v1/dashboard", headers=auth_headers)
+
+                # Assert successful response
+                assert response.status_code == 200
+                html_content = response.text
+
+                # Check for the specific data from this scenario
+                assert scenario["cage_id"] in html_content
+                assert f"{scenario['risk_score']:.3f}" in html_content
+                assert scenario["expected_level"] in html_content
+
+    def test_dashboard_data_rendering_without_results_file(self, client, monkeypatch):
+        """Test dashboard handles missing results.json gracefully."""
+        from pathlib import Path
+        import tempfile
+
+        from app.services.auth import AuthService
+
+        # Create a test auth service with the test token
+        test_auth_service = AuthService(bearer_token="test-token-no-results")
+
+        # Patch the global auth service instance
+        monkeypatch.setattr("app.dependencies.auth.auth_service", test_auth_service)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            results_dir = Path(temp_dir)
+            # Note: We don't create a results.json file
+
+            # Patch the RESULTS_DIR to point to our empty temp directory
+            monkeypatch.setattr("app.api.dashboard.RESULTS_DIR", results_dir)
+            # Also mock no fastq files to avoid live analysis
+            monkeypatch.setattr("app.api.dashboard.UPLOADS_DIR", results_dir)
+
+            # Create valid auth headers
+            auth_headers = {"Authorization": "Bearer test-token-no-results"}
+
+            # Call the dashboard endpoint
+            response = client.get("/api/v1/dashboard", headers=auth_headers)
+
+            # Assert successful response even with no data
+            assert response.status_code == 200
+            html_content = response.text
+
+            # Should show placeholder content when no data is available
+            assert "No analysis data available" in html_content
+            assert "Pending analysis setup" in html_content
 
     def test_dashboard_static_file_references(self, client):
         """Test that dashboard HTML references static files correctly."""
