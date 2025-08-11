@@ -158,7 +158,7 @@ def format_dashboard_context(
     Returns:
         Template context dictionary
     """
-    if not results or not results.get("summary"):
+    if not results:
         # Return placeholder context when no results available
         return {
             "request": request,
@@ -173,37 +173,83 @@ def format_dashboard_context(
             "analysis_error": None,
         }
 
-    summary = results["summary"]
+    # Handle both new format (with summary) and simple results.json array format
+    if isinstance(results, list) and results:
+        # Handle simple results.json format (array of cage results)
+        latest_result = results[0]  # Take the first/most recent result
 
-    # Format risk score for display
-    risk_score = summary.get("risk_score")
-    if isinstance(risk_score, float):
-        risk_score_display = f"{risk_score:.3f}"
-    else:
-        risk_score_display = "Analysis failed"
+        risk_score = latest_result.get("srsRiskScore", 0.0)
+        cage_id = latest_result.get("cageId")
+        last_updated = latest_result.get("lastUpdated", "Unknown")
 
-    # Determine status message
-    analysis_status = summary.get("analysis_status", "unknown")
-    if analysis_status == "completed":
-        status = (
-            f"Analysis completed - Risk level: {summary.get('risk_level', 'unknown')}"
-        )
-    elif analysis_status == "failed":
-        status = "Analysis failed - Please check file format"
-    else:
-        status = "Analysis status unknown"
+        # Determine risk level based on score
+        if risk_score >= 0.7:
+            risk_level = "high"
+        elif risk_score >= 0.3:
+            risk_level = "medium"
+        else:
+            risk_level = "low"
 
+        return {
+            "request": request,
+            "filename": f"Analysis for {cage_id}"
+            if cage_id
+            else "SRS Analysis Results",
+            "risk_score": f"{risk_score:.3f}",
+            "risk_level": risk_level,
+            "status": "Analysis completed successfully",
+            "last_updated": last_updated,
+            "partner_id": None,
+            "cage_id": cage_id,
+            "sample_date": None,
+            "analysis_error": None,
+        }
+
+    # Handle new format with summary structure
+    if results.get("summary"):
+        summary = results["summary"]
+
+        # Format risk score for display
+        risk_score = summary.get("risk_score")
+        if isinstance(risk_score, float):
+            risk_score_display = f"{risk_score:.3f}"
+        else:
+            risk_score_display = "Analysis failed"
+
+        # Determine status message
+        analysis_status = summary.get("analysis_status", "unknown")
+        if analysis_status == "completed":
+            status = f"Analysis completed - Risk level: {summary.get('risk_level', 'unknown')}"
+        elif analysis_status == "failed":
+            status = "Analysis failed - Please check file format"
+        else:
+            status = "Analysis status unknown"
+
+        return {
+            "request": request,
+            "filename": summary.get("filename", "Unknown file"),
+            "risk_score": risk_score_display,
+            "risk_level": summary.get("risk_level", "unknown"),
+            "status": status,
+            "last_updated": results.get("timestamp", "Unknown"),
+            "partner_id": summary.get("partner_id"),
+            "cage_id": summary.get("cage_id"),
+            "sample_date": summary.get("sample_date"),
+            "analysis_error": summary.get("analysis_error"),
+        }
+
+    # Fallback for unexpected format
     return {
         "request": request,
-        "filename": summary.get("filename", "Unknown file"),
-        "risk_score": risk_score_display,
-        "risk_level": summary.get("risk_level", "unknown"),
-        "status": status,
-        "last_updated": results.get("timestamp", "Unknown"),
-        "partner_id": summary.get("partner_id"),
-        "cage_id": summary.get("cage_id"),
-        "sample_date": summary.get("sample_date"),
-        "analysis_error": summary.get("analysis_error"),
+        "filename": "Unknown format",
+        "risk_score": "Format error",
+        "risk_level": "unknown",
+        "status": "Unexpected results format",
+        "last_updated": "Unknown",
+        "partner_id": None,
+        "cage_id": None,
+        "sample_date": None,
+        "analysis_error": "Results format not recognized",
     }
 
 

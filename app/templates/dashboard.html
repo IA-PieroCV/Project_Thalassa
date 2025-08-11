@@ -20,10 +20,15 @@
             <section class="welcome-section">
                 <h3>Welcome to the Dashboard</h3>
                 <p>This is your authenticated dashboard for viewing SRS risk assessment results.</p>
-                <p class="placeholder-notice">
-                    <strong>Note:</strong> This is currently a placeholder template.
-                    Risk assessment data will be displayed here once the analysis pipeline is complete.
+                {% if risk_score != "Pending analysis setup" %}
+                <p class="status-notice">
+                    <strong>Status:</strong> {{ status }}
                 </p>
+                {% else %}
+                <p class="placeholder-notice">
+                    <strong>Note:</strong> No analysis data available. Upload files via the API to see risk assessments here.
+                </p>
+                {% endif %}
             </section>
 
             <section class="data-section">
