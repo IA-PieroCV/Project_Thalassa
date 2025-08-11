@@ -4,7 +4,7 @@ version = "1.0.0"
 description = "A bioinformatics data analysis platform for SRS risk assessment, built with FastAPI and Python."
 authors = ["Project Thalassa Team"]
 channels = ["conda-forge", "bioconda", "pyviz"]
-platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 
 [dependencies]
 # Core Python runtime
