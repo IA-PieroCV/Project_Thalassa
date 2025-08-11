@@ -103,5 +103,5 @@ clean = "rm -rf .pytest_cache .coverage htmlcov dist __pycache__ .ruff_cache"
 
 [environments]
 default = { features = ["dev"] }
-prod = { solve-group = "prod" }
+prod = { solve-group = "prod", no-default-feature = true }
 docs = { features = ["dev", "docs"] }
