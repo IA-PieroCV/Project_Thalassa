@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     # Application settings
     app_name: str = "Project Thalassa"
-    app_version: str = "0.1.0"
+    app_version: str = "1.0.0"
     debug: bool = False
     environment: str = "development"
 

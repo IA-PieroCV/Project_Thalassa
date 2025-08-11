@@ -32,7 +32,7 @@ Returns basic application information and health status.
 ```json
 {
   "message": "Project Thalassa API",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "status": "operational"
 }
 ```
@@ -46,7 +46,7 @@ Detailed health check endpoint for monitoring systems.
 {
   "status": "healthy",
   "timestamp": "2024-01-15T10:30:00Z",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "environment": "development"
 }
 ```

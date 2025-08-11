@@ -4,6 +4,8 @@ from fastapi.testclient import TestClient
 from httpx import AsyncClient
 import pytest
 
+from app.config import settings
+
 
 @pytest.mark.unit
 def test_root_endpoint(client: TestClient) -> None:
@@ -21,7 +23,7 @@ def test_health_check_endpoint(client: TestClient) -> None:
     data = response.json()
     assert data["status"] == "healthy"
     assert data["service"] == "thalassa-api"
-    assert data["version"] == "0.1.0"
+    assert data["version"] == settings.app_version
 
 
 @pytest.mark.asyncio
@@ -42,4 +44,4 @@ async def test_health_check_endpoint_async(async_client: AsyncClient) -> None:
     data = response.json()
     assert data["status"] == "healthy"
     assert data["service"] == "thalassa-api"
-    assert data["version"] == "0.1.0"
+    assert data["version"] == settings.app_version

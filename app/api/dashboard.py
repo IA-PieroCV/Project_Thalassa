@@ -14,6 +14,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
+from ..config import settings
 from ..dependencies.auth import RequireAuth
 from ..services.analysis import AnalysisService
 
@@ -171,6 +172,7 @@ def format_dashboard_context(
             "cage_id": None,
             "sample_date": None,
             "analysis_error": None,
+            "app_version": settings.app_version,
         }
 
     # Handle both new format (with summary) and simple results.json array format
@@ -245,6 +247,7 @@ def format_dashboard_context(
             "low_risk_count": low_risk_count,
             "unique_cages": unique_cages,
             "has_multiple_results": True,
+            "app_version": settings.app_version,
         }
 
     # Handle new format with summary structure
@@ -278,6 +281,7 @@ def format_dashboard_context(
             "cage_id": summary.get("cage_id"),
             "sample_date": summary.get("sample_date"),
             "analysis_error": summary.get("analysis_error"),
+            "app_version": settings.app_version,
         }
 
     # Fallback for unexpected format
@@ -292,6 +296,7 @@ def format_dashboard_context(
         "cage_id": None,
         "sample_date": None,
         "analysis_error": "Results format not recognized",
+        "app_version": settings.app_version,
     }
 
 

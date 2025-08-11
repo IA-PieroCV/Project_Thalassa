@@ -12,11 +12,12 @@ from fastapi.templating import Jinja2Templates
 
 from .api.dashboard import router as dashboard_router
 from .api.upload import router as upload_router
+from .config import settings
 
 app = FastAPI(
     title="Project Thalassa",
     description="Bioinformatics data analysis platform for SRS risk assessment",
-    version="0.1.0",
+    version=settings.app_version,
 )
 
 # Configure template and static file serving
@@ -52,7 +53,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "thalassa-api",
-        "version": "0.1.0",
+        "version": settings.app_version,
         "template_rendering": "enabled",
         "static_files": "mounted",
         "components": ["upload", "dashboard"],
