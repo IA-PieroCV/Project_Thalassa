@@ -7,8 +7,10 @@ data analysis platform, providing secure file upload and dashboard functionality
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from .api.dashboard import router as dashboard_router
 from .api.upload import router as upload_router
@@ -24,13 +26,28 @@ app = FastAPI(
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
+# Add proxy headers middleware to handle X-Forwarded-* headers from nginx
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
+
+# Add trusted host middleware for production
+if settings.environment == "production":
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=[
+            "thalassa.intautomation.org",
+            "*.intautomation.org",
+            "localhost",
+        ],
+    )
+
 # Configure CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
         "http://localhost:8080",
-    ],  # Development origins only
+        "https://thalassa.intautomation.org",
+    ],  # Development origins and production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

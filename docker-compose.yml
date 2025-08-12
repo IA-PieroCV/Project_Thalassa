@@ -19,6 +19,9 @@ services:
       - HOST=0.0.0.0
       - PORT=8000
       - LOG_LEVEL=INFO
+      # Proxy headers configuration for HTTPS
+      - FORWARDED_ALLOW_IPS=*
+      - PROXY_HEADERS=true
       # nginx-proxy configuration
       - VIRTUAL_HOST=thalassa.intautomation.org
       - VIRTUAL_PORT=8000
